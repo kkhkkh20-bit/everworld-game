@@ -119,7 +119,7 @@ function ensureDynasties(){
  for(const n of W.people){if(!n.clanId&&household(n.householdId))n.clanId=household(n.householdId).clanId;if(!n.generation)n.generation=n.parentIds?.length?Math.max(1,...n.parentIds.map(id=>W.people.find(p=>p.id===id)?.generation||1))+1:1}
 }
 function clanMembers(c,alive=true){return W.people.filter(n=>n.clanId===c.id&&(!alive||n.alive))}
-function clanEstate(c){return (W.households||[]).filter(h=>householdMembers(h).some(n=>n.clanId===c.id)).reduce((sum,h)=>sum+householdAssets(h),0)}
+function clanEstate(c){return (W.households||[]).filter(h=>h.clanId===c.id).reduce((sum,h)=>sum+householdAssets(h),0)}
 function clanStrength(c){return Math.round(clanEstate(c)*.11+clanMembers(c).length*10+(c.leaders||0)*65+(c.prestige||0))}
 function politicalTitle(){const g=W.governance;if(!g)return '촌장';if(g.scale==='county')return g.system==='hereditary'?'백작':'군 연합 의장';if(g.scale==='federation')return g.system==='hereditary'?'영주':'연합 대표';return g.system==='hereditary'?'세습 촌장':'촌장'}
 function politicalSystem(){const g=W.governance;return g?.system==='hereditary'?'가문 세습':g?.system==='council'?'평의회 선출':'주민 대표 선출'}
@@ -137,7 +137,11 @@ function chosenLeader(previousId=null,forced=false){ensureDynasties();const peop
  const previous=W.people.find(n=>n.id===previousId),g=W.governance;
  const heirs=previous?peopleReady.filter(n=>n.parentIds?.includes(previousId)||n.clanId===previous.clanId&&n.generation>(previous.generation||1)):[];
  if(!forced&&g.system==='hereditary'&&heirs.length&&g.legitimacy>35)return heirs.sort((a,b)=>supportRating(b)-supportRating(a))[0];
- const council=new Set(g.council);return peopleReady.sort((a,b)=>(supportRating(b)+(council.has(b.id)?12:0))-(supportRating(a)+(council.has(a.id)?12:0)))[0]
+ const voters=W.households.map(h=>householdMembers(h).filter(n=>n.age>=20).sort((a,b)=>b.skill-a.skill)[0]).filter(Boolean);
+const best=peopleReady.sort((a,b)=>supportRating(b)-supportRating(a)).slice(0,6);const votes=new Map(best.map(n=>[n.id,0]));
+for(const voter of voters){const score=n=>supportRating(n)*.38+(voter.relations[n.id]||0)*.4+(voter.clanId===n.clanId?22:0)+(g.council.includes(n.id)?7:0);
+const selected=[...best].sort((a,b)=>score(b)-score(a))[0];if(selected)votes.set(selected.id,(votes.get(selected.id)||0)+1)}
+return best.sort((a,b)=>(votes.get(b.id)||0)-(votes.get(a.id)||0)||supportRating(b)-supportRating(a))[0]
 }
 function registerLeadership(n,reason){if(!n)return;const g=W.governance;g.headClanId=n.clanId;g.elections++;g.legitimacy=clip(g.legitimacy+(reason==='heredity'?4:7),10,100);
  const clan=clanById(n.clanId);if(clan){clan.leaders++;clan.prestige=Math.min(100,(clan.prestige||0)+8)}
@@ -148,7 +152,13 @@ function foundHamlet(){ensureDynasties();if(W.hamlets.length>=3||W.abandoned||W.
  W.wood-=75;W.tools--;withdrawFood(110,'export');const id=W.hamlets.length;const settlement={id,name:HAMLET_NAMES[id],founded:W.day,specialty:id===1?'산림·과수':'어업·교역'};
  W.hamlets.push(settlement);for(const h of settlers)h.settlementId=id;W.hamletsFounded++;addEvent(settlement.name+'에 두 가구가 정착해 새로운 취락을 만들었다.','success');return true}
 function reviewPolitics(){ensureDynasties();if(W.day%365!==0||W.abandoned)return;
- clanCouncil();foundHamlet();const g=W.governance,pop=people().length,settlements=W.hamlets.filter(t=>t.id===0||W.households.some(h=>h.settlementId===t.id&&householdMembers(h).length));
+ clanCouncil();foundHamlet();const g=W.governance,pop=people().length;
+for(const hamlet of W.hamlets.filter(t=>t.id!==0)){const settlers=W.households.filter(h=>h.settlementId===hamlet.id&&householdMembers(h).length);const candidates=W.households.filter(h=>h.settlementId===0&&householdMembers(h).some(n=>['farmer','forager','fisher','orchardist','labor'].includes(n.role)));
+if(settlers.length<2&&candidates.length>4&&W.food>pop*58){candidates.sort((a,b)=>householdMembers(a).length-householdMembers(b).length)[0].settlementId=hamlet.id;addEvent(hamlet.name+'에 새 가구가 이주해 마을을 다시 채웠다.','ordinary')}}
+const settlements=W.hamlets.filter(t=>t.id===0||W.households.filter(h=>h.settlementId===t.id&&householdMembers(h).length).length>=2);
+g.erosionYears??=0;if((g.scale==='county'&&settlements.length<3)||(g.scale==='federation'&&settlements.length<2))g.erosionYears++;else g.erosionYears=0;
+if(g.erosionYears>=2){g.scale=g.scale==='county'?(settlements.length>=2?'federation':'village'):'village';g.politicalChanges++;g.legitimacy=clip(g.legitimacy-11,10,100);g.erosionYears=0;addEvent('외곽 취락의 쇠퇴로 통치 영역이 줄었다. 현재 지도자의 칭호는 '+politicalTitle()+'다.','emergency')}
+
  g.stableYears=pop>=18&&W.grievance<55?g.stableYears+1:Math.max(0,g.stableYears-1);
  const clans=[...W.clans].sort((a,b)=>clanStrength(b)-clanStrength(a)),largest=clans[0],leader=chief();
  if(g.system==='elected'&&g.stableYears>=2&&W.stage>=1){g.system='council';g.politicalChanges++;addEvent('주민들의 가구 대표들이 정기적인 마을 평의회를 꾸렸다.','success')}
