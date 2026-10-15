@@ -176,9 +176,9 @@ a.spouseId=b.id;b.spouseId=a.id;a.householdId=id;b.householdId=id;W.marriages++;
 function initHouseholds(){ensureFamilies();const eligible=people().filter(n=>n.age>=18&&n.age<=43),f=eligible.filter(n=>n.sex==='F'),m=eligible.filter(n=>n.sex==='M');for(let i=0;i<Math.min(4,f.length,m.length);i++)marryCouple(f[i],m[i])}
 function bornChild(a,b){if(!a?.alive||!b?.alive||W.abandoned)return null;const d=date(),n=createPerson('child',false);n.age=0;n.birthdayMonth=d.month;n.birthdayDay=d.day;n.sex=chance(.5)?'F':'M';n.skill=ri(12,27);n.health=ri(77,95);n.energy=ri(55,80);n.spouseId=null;n.householdId=a.householdId;n.parentIds=[a.id,b.id];n.clanId=a.sex==='M'?a.clanId:b.clanId;n.generation=Math.max(a.generation||1,b.generation||1)+1;const clan=clanById(n.clanId);if(clan)n.name=n.name.split(' ')[0]+' '+clan.surname;n.personalFood=0;n.action='가족의 보호 아래 성장';n.site='home';n.goal='성장과 배움';initMind(n);initMind(a);initMind(b);for(const key of Object.keys(n.abilities)){n.abilities[key]=clip(Math.round(n.abilities[key]*.53+((a.abilities[key]+b.abilities[key])/2)*.47+(rand()-.5)*12),5,96)}for(const key of Object.keys(n.motives)){n.motives[key]=clip(Math.round(n.motives[key]*.78+((a.motives[key]+b.motives[key])/2)*.22),6,97)}a.lastBirthDay=W.day;b.lastBirthDay=W.day;W.births++;addEvent(a.name+'의 가정에서 '+n.name+'이 태어났다.','success');return n}
 function familyStep(){ensureFamilies();if(W.day%45!==0)return;const adults=people().filter(n=>n.age>=18&&n.age<=48&&n.health>=40&&!n.spouseId).sort((a,b)=>b.traits.empathy-a.traits.empathy);
-for(const a of adults){if(a.spouseId)continue;const b=adults.find(x=>x.id!==a.id&&!x.spouseId&&x.sex!==a.sex&&Math.abs(x.age-a.age)<=16);if(b){initNeeds(a);initNeeds(b);const courting=a.romanticPartnerId===b.id&&b.romanticPartnerId===a.id;
+for(const a of adults){if(a.spouseId)continue;const b=adults.filter(x=>x.id!==a.id&&!x.spouseId&&x.sex!==a.sex&&Math.abs(x.age-a.age)<=16).sort((x,y)=>(Number(y.id===a.romanticPartnerId)*100+Number(a.id===y.romanticPartnerId)*60+(a.relations[y.id]||0)+(y.relations[a.id]||0))-(Number(x.id===a.romanticPartnerId)*100+Number(a.id===x.romanticPartnerId)*60+(a.relations[x.id]||0)+(x.relations[a.id]||0)))[0];if(b){initNeeds(a);initNeeds(b);const courting=a.romanticPartnerId===b.id&&b.romanticPartnerId===a.id;
 const trusted=(a.relations[b.id]||0)>25&&(b.relations[a.id]||0)>25;
-if((courting||trusted)&&adultMutualInterest(a,b)&&chance(courting?.34:.075))marryCouple(a,b)}if(W.marriages>14)break}
+if(adultMutualInterest(a,b)&&chance(courting?.49:trusted?.26:.10))marryCouple(a,b)}if(W.marriages>14)break}
 if(people().length>W.buildings.homes*4+1)return;for(const a of people().filter(n=>n.sex==='F'&&n.spouseId&&n.age>=18&&n.age<=42)){const b=people().find(n=>n.id===a.spouseId);if(!b||!b.alive||W.day-a.lastBirthDay<570||people().length>=W.buildings.homes*4+1)continue;const bonded=W.day-Math.max(a.lastAffectionDay||-999,b.lastAffectionDay||-999)<220;
 const stability=clip(.17+(W.food/Math.max(1,people().length)-35)/250+(W.morale-50)/500+(bonded?.13:0),.03,.55);
 if(chance(stability*.18)){bornChild(a,b);break}}}
@@ -506,8 +506,8 @@ function updateNeedsDaily(n,seasonName){
  // Ordinary night sleep occurs automatically; exceptional tiredness requires explicit rest.
  const previousWork=n.action||'';
  const hardWork=/농|곡물|사냥|나무|목재|수확|건설|노동|채집|훈련|관리|밭갈이|제작/.test(previousWork);
- x.sleep=clip(x.sleep+(hardWork?16:12)+(n.stress>60?6:0)-(shelter?12:7)-(n.age<16?4:0),0,100);
- x.thirst=clip(x.thirst+(hardWork?21:15)+(seasonName==='여름'?7:0)-(W.forest>14?14:8),0,100);
+ x.sleep=clip(x.sleep+(hardWork?12:9)+(n.stress>60?3:0)-(shelter?12:9)-(n.age<16?3:0),0,100);
+ x.thirst=clip(x.thirst+(hardWork?17:11)+(seasonName==='여름'?4:0)-(W.forest>14?15:12),0,100);
  x.warmth=clip(x.warmth+(seasonName==='겨울'?(shelter?11:23):seasonName==='가을'?4:0)-(seasonName==='여름'?17:seasonName==='봄'?10:shelter?7:1),0,100);
  x.hygiene=clip(x.hygiene+(hardWork?7:4)-(seasonName==='여름'?3:2),0,100);
  x.safety=clip(x.safety+(W.crisis?.active?6:0)+(n.hunger>55?5:0)+(currentDebt(householdFor(n))>10?2:0)-(shelter?3:0)-(W.grievance<30?2:0),0,100);
@@ -562,8 +562,8 @@ function evaluateChoices(n){
  add('protest',(3+W.grievance*.52+m.status*.23+t.ambition*.16+a.charisma*.12)*recognitionRoom,'정책을 바꾸지 않으면 마을의 미래가 위험하다',n.age>=18&&n.role!=='chief'&&W.grievance>38);
  add('trade',4+m.wealth*.30+a.reasoning*.22+a.charisma*.14,'교환하면 서로 부족한 물건을 구할 수 있다',W.stage>=1&&!!h&&r.stock>r.members*9&&n.energy>22);
  add('escape',Math.max(0,75+lowFood*.50+m.survival*.45+a.risk*.10-r.friends*5-(W.food>people().length*2?80:0)),'남아 있으면 생존 가능성이 낮다',n.age>=15&&W.food<people().length*2&&n.health<32&&r.stock<r.members*2&&r.friends===0&&n.role!=='chief');
- add('sleep',11+needs.sleep*1.13+(100-fatigue)*.33+(needs.sleep>65?35:0),'밤잠이 부족해 집중과 건강을 잃고 있다',needs.sleep>24);
- add('drink',10+needs.thirst*1.23+(needs.thirst>62?34:0),'목이 말라 깨끗한 물을 확보해야 한다',needs.thirst>26);
+ add('sleep',4+needs.sleep*.87+(100-fatigue)*.22+(needs.sleep>63?35:0),'밤잠이 부족해 집중과 건강을 잃고 있다',needs.sleep>24);
+ add('drink',5+needs.thirst*.90+(needs.thirst>65?31:0),'목이 말라 깨끗한 물을 확보해야 한다',needs.thirst>26);
  add('warm',12+needs.warmth*.92+(season()==='겨울'?19:0),'몸을 따뜻하게 해야 건강을 지킨다',needs.warmth>24);
  add('wash',8+needs.hygiene*.94,'몸을 씻고 청결을 유지한다',needs.hygiene>37);
  add('bond',10+needs.intimacy*.72+needs.love*.25+m.family*.20+(n.spouseId?14:0),'서로 동의한 성인 관계에서 애정과 친밀감을 나눈다',n.age>=18&&needs.intimacy>20&&!!n.spouseId);
