@@ -1,0 +1,28 @@
+name: Simulation regression audit
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  autonomous-village-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replay ten worlds for 180 days
+        run: node tests/simulate.mjs | tee simulation-report.txt
+      - name: Archive reproducible audit output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-simulation-audit
+          path: simulation-report.txt
+          if-no-files-found: ignore
