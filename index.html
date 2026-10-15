@@ -469,26 +469,104 @@ function alternativeRoles(n){
  ];
  return rules.filter(r=>r.role!==n.role&&r.demand>10).sort((a,b)=>b.demand+b.aptitude*.15-(a.demand+a.aptitude*.15))[0]||null
 }
+
+const NEED_LABELS={hunger:'식욕',thirst:'갈증',sleep:'수면욕',warmth:'체온·보온',hygiene:'청결',intimacy:'성적 친밀감',safety:'안전',belonging:'소속감',love:'사랑·애착',esteem:'존중·인정',autonomy:'자율성',play:'놀이·휴식',meaning:'삶의 의미',growth:'성장·자아실현'};
+const MASLOW_NAMES=['생리적 욕구','안전 욕구','소속·사랑 욕구','존중 욕구','자아실현 욕구'];
+const NEED_ACTIONS={sleep:'수면 회복',drink:'식수 확보',warm:'보온·난방',wash:'몸 씻기',bond:'성인 연인과 친밀감',court:'상호 호감을 바탕으로 교제',belong:'마을 모임 참여',recognition:'공동체에서 인정받기',creative:'창작·새로운 발명',meaning:'자신의 가치 실현',play:'취미·여가'};
+function initNeeds(n){
+ if(!n.needs)n.needs={hunger:Math.round(n.hunger||0),thirst:ri(8,28),sleep:ri(12,40),warmth:ri(5,30),hygiene:ri(12,37),intimacy:n.age>=18?ri(12,65):0,safety:ri(14,45),belonging:ri(15,60),love:ri(16,63),esteem:ri(18,64),autonomy:ri(13,57),play:ri(13,48),meaning:ri(18,53),growth:ri(15,58)};
+ for(const k of Object.keys(NEED_LABELS))n.needs[k]=clip(Number(n.needs[k])||0,0,100);
+ n.needHistory??=[];n.maslowLevel??=1;n.romanticPartnerId??=null;n.lastAffectionDay??=-999;n.daysWithoutWater??=0;
+ if(n.age<18)n.needs.intimacy=0;
+ return n.needs
+}
+function needsScores(n){
+ const x=initNeeds(n),h=householdFor(n),per=householdFood(h)/Math.max(1,h?householdMembers(h).length:1),social=friends(n).length;
+ // Higher value = degree to which that level has been satisfied.
+ const physiological=clip(100-(x.hunger*.31+x.thirst*.25+x.sleep*.23+x.warmth*.13+x.hygiene*.08),0,100);
+ const safety=clip(100-x.safety*.8-(n.health<40?14:0)-(currentDebt(h)>20?11:0),0,100);
+ const connection=clip(100-(x.belonging*.45+x.love*.55)+(social>1?5:0),0,100);
+ const respect=clip(100-(x.esteem*.60+x.autonomy*.40),0,100);
+ const fulfillment=clip(100-(x.growth*.55+x.meaning*.45),0,100);
+ let tier=1;
+ if(physiological>=54){tier=2;if(safety>=53){tier=3;if(connection>=48){tier=4;if(respect>=46)tier=5}}}
+ n.maslowLevel=tier;
+ return {physiological,safety,connection,respect,fulfillment,tier,stockPerPerson:per};
+}
+function updateNeedsDaily(n,seasonName){
+ const x=initNeeds(n);
+ const shelter=householdFor(n)?.homeIndex!==null,positiveFriends=friends(n).length,spouse=W.people.find(p=>p.id===n.spouseId&&p.alive);
+ x.hunger=clip(n.hunger,0,100);
+ // Ordinary night sleep occurs automatically; exceptional tiredness requires explicit rest.
+ const previousWork=n.action||'';
+ const hardWork=/농|곡물|사냥|나무|목재|수확|건설|노동|채집|훈련|관리|밭갈이|제작/.test(previousWork);
+ x.sleep=clip(x.sleep+(hardWork?16:12)+(n.stress>60?6:0)-(shelter?12:7)-(n.age<16?4:0),0,100);
+ x.thirst=clip(x.thirst+(hardWork?21:15)+(seasonName==='여름'?7:0)-(W.forest>14?14:8),0,100);
+ x.warmth=clip(x.warmth+(seasonName==='겨울'?(shelter?11:23):seasonName==='가을'?4:0)-(seasonName==='여름'?17:seasonName==='봄'?10:shelter?7:1),0,100);
+ x.hygiene=clip(x.hygiene+(hardWork?7:4)-(seasonName==='여름'?3:2),0,100);
+ x.safety=clip(x.safety+(W.crisis?.active?6:0)+(n.hunger>55?5:0)+(currentDebt(householdFor(n))>10?2:0)-(shelter?3:0)-(W.grievance<30?2:0),0,100);
+ x.belonging=clip(x.belonging+(positiveFriends?2:5)-(spouse?2:0),0,100);
+ x.love=clip(x.love+(spouse?1:3)-(positiveFriends>2?1:0),0,100);
+ x.esteem=clip(x.esteem+2-(n.action?.includes('성공')?4:0),0,100);
+ x.autonomy=clip(x.autonomy+2+(n.trainingDays?2:0),0,100);
+ x.play=clip(x.play+(hardWork?5:2),0,100);
+ x.meaning=clip(x.meaning+1,0,100);x.growth=clip(x.growth+2,0,100);
+ if(n.age>=18){
+   const highDesire=clip(n.motives?.family||50,10,95);
+   x.intimacy=clip(x.intimacy+(spouse?1.1:2)+(highDesire-50)/70,0,100);
+ }else x.intimacy=0;
+ // Unmet basic physiology affects performance. Intimacy is not a survival requirement.
+ if(x.sleep>88){n.energy=Math.max(0,n.energy-3);n.stress=clip(n.stress+0.75,0,100)}
+ if(x.thirst>87){n.daysWithoutWater++;n.energy=Math.max(0,n.energy-2);if(n.daysWithoutWater>8)n.health=clip(n.health-.2,0,100)}else n.daysWithoutWater=0;
+ if(x.warmth>90&&seasonName==='겨울'){n.energy=Math.max(0,n.energy-1)}
+ if(x.hygiene>90)n.stress=clip(n.stress+.2,0,100);
+ needsScores(n);
+}
+function satisfyNeeds(n,keys,value){
+ const x=initNeeds(n);for(const [k,w] of Object.entries(keys))x[k]=clip(x[k]-(value*w),0,100);
+ n.stress=clip(n.stress-Math.max(0,value/26),0,100);needsScores(n)
+}
+function selectedMaslow(n){return MASLOW_NAMES[(n.maslowLevel||1)-1]||MASLOW_NAMES[0]}
+function adultMutualInterest(a,b){
+ if(!a||!b||a.id===b.id||a.age<18||b.age<18||!a.alive||!b.alive)return false;
+ initMind(a);initMind(b);initNeeds(a);initNeeds(b);
+ if(a.spouseId&&a.spouseId!==b.id||b.spouseId&&b.spouseId!==a.id)return false;
+ const trustA=a.relations[b.id]||0,trustB=b.relations[a.id]||0;
+ const interestA=clip(.10+(a.abilities.cooperation||50)/330+(a.motives.family||50)/360+trustA/190-(a.traits.fear||50)/500,.04,.95);
+ const interestB=clip(.10+(b.abilities.cooperation||50)/330+(b.motives.family||50)/360+trustB/190-(b.traits.fear||50)/500,.04,.95);
+ return chance(interestA)&&chance(interestB)
+}
 function evaluateChoices(n){
- initMind(n);const a=n.abilities,m=n.motives,t=n.traits,r=personalResources(n),h=r.house,scarce=W.food<people().length*38||W.crisis?.active;
+ initMind(n);const needs=initNeeds(n),tiers=needsScores(n);const a=n.abilities,m=n.motives,t=n.traits,r=personalResources(n),h=r.house,scarce=W.food<people().length*38||W.crisis?.active;
  const fatigue=100*n.energy/(cap(n)||100),lowFood=clip(70-r.perPerson*2.4,0,80),agePenalty=n.age>57?(n.age-57)*1.3:0;
- const options=[],lateAutumn=date().month>=8&&date().month<=11;
+ const options=[],lateAutumn=date().month>=8&&date().month<=11;const upperRoom=clip((tiers.physiological-30)/55,.15,1),recognitionRoom=clip((tiers.connection-25)/60,.17,1);
  const add=(type,score,why,enabled=true)=>{if(enabled&&Number.isFinite(score)){const recent=n.mind.outcomes.filter(o=>o.type===type).slice(-4);
  const lessons=recent.reduce((sum,o)=>sum+(o.success?2:-5),0)*(.5+a.learning/130),habit=n.mind.plan===type?a.discipline*.055:0;
  options.push({type,score:score+lessons+habit+rand()*13-6.5,reason:why})}};
- add('gather',16+lowFood*.70+m.survival*.27+a.stamina*.11+(scarce?22:0)-agePenalty*.7,'먹을 것이 부족하면 직접 확보해야 한다',W.forest>20&&n.energy>23&&n.age>=15);
+ add('gather',16+needs.hunger*.22+lowFood*.70+m.survival*.27+a.stamina*.11+(scarce?22:0)-agePenalty*.7,'먹을 것이 부족하면 직접 확보해야 한다',W.forest>20&&n.energy>23&&n.age>=15);
  add('reserve',10+lowFood*.75+m.security*.32+a.reasoning*.1+(lateAutumn?22:0),'다가올 계절을 위해 공동 비축에서 가구 몫을 확보한다',W.products.grain>people().length*14&&r.perPerson<28&&!!h);
- add('social',15+Math.max(0,2-r.friends)*13+m.belonging*.3+a.charisma*.23+t.empathy*.17-r.debt*.2,'서로 믿고 도울 사람을 늘린다',people().length>1);
+ add('social',15+needs.belonging*.33+Math.max(0,2-r.friends)*13+m.belonging*.3+a.charisma*.23+t.empathy*.17-r.debt*.2,'서로 믿고 도울 사람을 늘린다',people().length>1);
  add('help',8+m.family*.25+a.cooperation*.3+t.empathy*.25,'힘든 이웃을 도와 장래의 협력을 얻는다',!!h&&r.stock>r.members*16&&people().length>2);
  const alt=alternativeRoles(n);
  add('retrain',5+(alt?.demand||0)*.75+a.learning*.24+m.wealth*.15-(n.age>54?28:0),'현재 생업보다 필요한 기술이 있다',!!alt&&n.age>=15&&n.age<63&&!n.trainingDays);
  add('improve',12+a.discipline*.24+a.reasoning*.26+m.security*.23,'농지를 가꾸면 다음 수확이 나아진다',W.fields.some(p=>p.state==='growing'&&p.care<.98)&&n.energy>25&&n.age>=15);
- const field=n.role==='farmer'||n.role==='gardener'?'farming':n.role==='carpenter'?'craft':n.role==='merchant'?'trade':n.role==='herder'?'care':n.role==='forager'||n.role==='hunter'?'foraging':'social';add('study',12+a.learning*.32+a.creativity*.18+m.discovery*.32-(scarce?30:0)-Math.max(0,(n.skills[field]||30)-70)*1.8,'기술을 익히면 다음에는 더 나은 선택을 할 수 있다',n.age>=12&&n.energy>25);
- add('mentor',12+a.cooperation*.23+m.family*.23+n.skills.farming*.09+(n.age>=60?15:0),'나의 경험을 다음 세대가 이어받아야 한다',n.age>=48&&n.skill>40&&people().some(p=>p.age>=12&&p.age<30&&p.id!==n.id));
- add('rest',6+(100-fatigue)*.95+(100-n.health)*.50+a.resilience*.10+agePenalty+m.security*.13,'과로하면 다음 일에 실패할 수 있다',n.energy<cap(n)*.80||n.health<62);
- add('protest',3+W.grievance*.52+m.status*.23+t.ambition*.16+a.charisma*.12,'정책을 바꾸지 않으면 마을의 미래가 위험하다',n.age>=18&&n.role!=='chief'&&W.grievance>38);
+ const field=n.role==='farmer'||n.role==='gardener'?'farming':n.role==='carpenter'?'craft':n.role==='merchant'?'trade':n.role==='herder'?'care':n.role==='forager'||n.role==='hunter'?'foraging':'social';add('study',(12+a.learning*.32+a.creativity*.18+m.discovery*.32)*upperRoom-(scarce?30:0)-Math.max(0,(n.skills[field]||30)-70)*1.8,'기술을 익히면 다음에는 더 나은 선택을 할 수 있다',n.age>=12&&n.energy>25);
+ add('mentor',(12+a.cooperation*.23+m.family*.23+n.skills.farming*.09+(n.age>=60?15:0))*upperRoom,'나의 경험을 다음 세대가 이어받아야 한다',n.age>=48&&n.skill>40&&people().some(p=>p.age>=12&&p.age<30&&p.id!==n.id));
+ add('rest',6+needs.sleep*.35+(100-fatigue)*.95+(100-n.health)*.50+a.resilience*.10+agePenalty+m.security*.13,'과로하면 다음 일에 실패할 수 있다',n.energy<cap(n)*.80||n.health<62);
+ add('protest',(3+W.grievance*.52+m.status*.23+t.ambition*.16+a.charisma*.12)*recognitionRoom,'정책을 바꾸지 않으면 마을의 미래가 위험하다',n.age>=18&&n.role!=='chief'&&W.grievance>38);
  add('trade',4+m.wealth*.30+a.reasoning*.22+a.charisma*.14,'교환하면 서로 부족한 물건을 구할 수 있다',W.stage>=1&&!!h&&r.stock>r.members*9&&n.energy>22);
  add('escape',Math.max(0,75+lowFood*.50+m.survival*.45+a.risk*.10-r.friends*5-(W.food>people().length*2?80:0)),'남아 있으면 생존 가능성이 낮다',n.age>=15&&W.food<people().length*2&&n.health<32&&r.stock<r.members*2&&r.friends===0&&n.role!=='chief');
+ add('sleep',11+needs.sleep*1.13+(100-fatigue)*.33+(needs.sleep>65?35:0),'밤잠이 부족해 집중과 건강을 잃고 있다',needs.sleep>24);
+ add('drink',10+needs.thirst*1.23+(needs.thirst>62?34:0),'목이 말라 깨끗한 물을 확보해야 한다',needs.thirst>26);
+ add('warm',12+needs.warmth*.92+(season()==='겨울'?19:0),'몸을 따뜻하게 해야 건강을 지킨다',needs.warmth>24);
+ add('wash',8+needs.hygiene*.94,'몸을 씻고 청결을 유지한다',needs.hygiene>37);
+ add('bond',10+needs.intimacy*.72+needs.love*.25+m.family*.20+(n.spouseId?14:0),'서로 동의한 성인 관계에서 애정과 친밀감을 나눈다',n.age>=18&&needs.intimacy>20&&!!n.spouseId);
+ add('court',8+needs.intimacy*.42+needs.love*.42+m.belonging*.20+a.charisma*.22,'서로 마음이 맞는 성인을 만나 관계를 시작한다',n.age>=18&&!n.spouseId&&needs.love>28);
+ add('belong',10+needs.belonging*.65+m.belonging*.25,'공동체 활동에 참여해 소속감을 얻는다',people().length>2);
+ add('recognition',(11+needs.esteem*.70+m.status*.28+a.charisma*.18)*upperRoom,'인정과 신뢰를 얻기 위해 공동체에 기여한다',n.age>=15);
+ add('creative',(12+needs.growth*.58+a.creativity*.42+m.discovery*.24)*upperRoom,'남들이 하지 않았던 일을 시도하고 싶다',n.age>=15&&n.energy>26);
+ add('meaning',(13+needs.meaning*.67+m.family*.20+a.reasoning*.19)*upperRoom*recognitionRoom,'스스로 중요하게 여기는 가치를 이루고 싶다',n.age>=18);
+ add('play',8+needs.play*.93+(n.age<=22?10:0),'일과 생존 외에도 놀이와 여유가 필요하다',n.energy>22&&n.age>=5);
  return options.sort((x,y)=>y.score-x.score)
 }
 function chooseIntent(n){initMind(n);const candidates=evaluateChoices(n),best=candidates[0];if(!best)return;
