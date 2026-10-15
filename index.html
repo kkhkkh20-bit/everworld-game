@@ -445,6 +445,105 @@ for(const buyer of homes.filter(h=>h.coins>=2)){
  if(owners>W.cattle){let excess=owners-W.cattle;for(const h of [...W.households].reverse()){const taken=Math.min(excess,h.cattleOwned);h.cattleOwned-=taken;excess-=taken;if(!excess)break}}
  W.cattleCommons=Math.max(0,W.cattle-W.households.reduce((sum,h)=>sum+(h.cattleOwned||0),0));
 }
+
+const ABILITY_LABELS={reasoning:'판단력',learning:'학습력',creativity:'창의력',awareness:'관찰력',resilience:'회복력',stamina:'지구력',dexterity:'손재주',charisma:'설득력',cooperation:'협동심',discipline:'자제력',risk:'위험감수'};
+const MOTIVE_LABELS={survival:'생존',security:'안정',family:'가족',wealth:'부',status:'명예',discovery:'탐구',belonging:'소속'};
+const MIND_LABELS={gather:'비상 식량 확보',reserve:'가족용 곡물 비축',social:'인맥 형성',help:'이웃 돕기',retrain:'새 생업 학습',improve:'농지 관리',study:'기술 연구',rest:'체력 회복',protest:'주민 의견 전달',trade:'물물교환',escape:'안전한 곳으로 이주'};
+function initMind(n){
+ if(!n.abilities)n.abilities={reasoning:ri(15,90),learning:ri(18,92),creativity:ri(12,93),awareness:ri(17,95),resilience:ri(18,92),stamina:ri(22,95),dexterity:ri(18,90),charisma:ri(14,94),cooperation:clip(Math.round(n.traits.empathy*.65+n.traits.loyalty*.35),5,96),discipline:ri(10,97),risk:clip(Math.round(n.traits.ambition*.52+(100-n.traits.fear)*.48),6,95)};
+ if(!n.motives)n.motives={survival:ri(57,95),security:ri(30,94),family:ri(17,92),wealth:ri(10,93),status:ri(10,90),discovery:ri(11,91),belonging:ri(15,95)};
+ n.mind??={plan:'',reason:'',considered:[],lastDecision:0,nextReview:0,lastAction:0,outcomes:[],failures:0,successes:0};
+ n.skills??={farming:ri(10,50),foraging:ri(8,57),craft:ri(8,54),trade:ri(8,51),social:ri(8,54),care:ri(9,55)};
+ n.stress??=ri(5,22);n.caution??=ri(20,80);
+ return n
+}
+function personalResources(n){const h=householdFor(n),members=Math.max(1,h?householdMembers(h).length:1),stock=householdFood(h);return {house:h,members,stock,perPerson:stock/members,debt:currentDebt(h),friends:friends(n).length,ageFactor:n.age>=60?.64:n.age<20?.76:1}}
+function alternativeRoles(n){
+ const p=people().length;
+ const rules=[
+ {role:'farmer',demand:Math.max(0,Math.ceil(p/7)-count('farmer'))*19+(W.food<p*80?25:0),aptitude:n.skills.farming+n.abilities.stamina*.3},
+ {role:'forager',demand:(W.food<p*30?42:W.forest>40?12:0),aptitude:n.skills.foraging+n.abilities.awareness*.4},
+ {role:'carpenter',demand:W.tools<4?45:W.project?24:count('carpenter')===0?30:4,aptitude:n.skills.craft+n.abilities.dexterity*.4},
+ {role:'herder',demand:W.cattle>2&&count('herder')===0?48:6,aptitude:n.skills.care+n.abilities.cooperation*.2},
+ {role:'merchant',demand:W.stage===2&&count('merchant')===0?35:W.stage>=1?10:0,aptitude:n.skills.trade+n.abilities.charisma*.4}
+ ];
+ return rules.filter(r=>r.role!==n.role&&r.demand>10).sort((a,b)=>b.demand+b.aptitude*.15-(a.demand+a.aptitude*.15))[0]||null
+}
+function evaluateChoices(n){
+ initMind(n);const a=n.abilities,m=n.motives,t=n.traits,r=personalResources(n),h=r.house,scarce=W.food<people().length*38||W.crisis?.active;
+ const fatigue=100*n.energy/(cap(n)||100),lowFood=clip(70-r.perPerson*2.4,0,80),agePenalty=n.age>57?(n.age-57)*1.3:0;
+ const options=[];
+ const add=(type,score,why,enabled=true)=>{if(enabled&&Number.isFinite(score))options.push({type,score:score+rand()*11-5.5,reason:why})};
+ add('gather',16+lowFood*.70+m.survival*.27+a.stamina*.11+(scarce?22:0)-agePenalty*.7,'먹을 것이 부족하면 직접 확보해야 한다',W.forest>20&&n.energy>23&&n.age>=15);
+ add('reserve',10+lowFood*.75+m.security*.32+a.reasoning*.1,'다가올 계절을 위해 공동 비축에서 가구 몫을 확보한다',W.products.grain>people().length*14&&r.perPerson<28&&!!h);
+ add('social',15+Math.max(0,2-r.friends)*13+m.belonging*.3+a.charisma*.23+t.empathy*.17-r.debt*.2,'서로 믿고 도울 사람을 늘린다',people().length>1);
+ add('help',8+m.family*.25+a.cooperation*.3+t.empathy*.25,'힘든 이웃을 도와 장래의 협력을 얻는다',!!h&&r.stock>r.members*16&&people().length>2);
+ const alt=alternativeRoles(n);
+ add('retrain',5+(alt?.demand||0)*.75+a.learning*.24+m.wealth*.15-(n.age>54?28:0),'현재 생업보다 필요한 기술이 있다',!!alt&&n.age>=15&&n.age<63&&!n.trainingDays);
+ add('improve',12+a.discipline*.24+a.reasoning*.26+m.security*.23,'농지를 가꾸면 다음 수확이 나아진다',W.fields.some(p=>p.state==='growing'&&p.care<.98)&&n.energy>25&&n.age>=15);
+ add('study',12+a.learning*.32+a.creativity*.18+m.discovery*.32-(scarce?30:0),'기술을 익히면 다음에는 더 나은 선택을 할 수 있다',n.age>=12&&n.energy>25);
+ add('rest',6+(100-fatigue)*.95+(100-n.health)*.50+a.resilience*.10+agePenalty+m.security*.13,'과로하면 다음 일에 실패할 수 있다',n.energy<cap(n)*.80||n.health<62);
+ add('protest',3+W.grievance*.52+m.status*.23+t.ambition*.16+a.charisma*.12,'정책을 바꾸지 않으면 마을의 미래가 위험하다',n.age>=18&&n.role!=='chief'&&W.grievance>38);
+ add('trade',4+m.wealth*.30+a.reasoning*.22+a.charisma*.14,'교환하면 서로 부족한 물건을 구할 수 있다',W.stage>=1&&!!h&&r.stock>r.members*9&&n.energy>22);
+ add('escape',Math.max(0,75+lowFood*.50+m.survival*.45+a.risk*.10-r.friends*5-(W.food>people().length*2?80:0)),'남아 있으면 생존 가능성이 낮다',n.age>=15&&W.food<people().length*2&&n.health<32&&r.stock<r.members*2&&r.friends===0&&n.role!=='chief');
+ return options.sort((x,y)=>y.score-x.score)
+}
+function chooseIntent(n){initMind(n);const candidates=evaluateChoices(n),best=candidates[0];if(!best)return;
+ // Goals persist, but emergencies trigger reevaluation.
+ const crisis=W.crisis?.active||W.food<people().length*18||n.health<33;
+ if(n.mind.plan&&W.day<n.mind.nextReview&&!crisis)return;
+ if(n.mind.plan&&n.mind.plan===best.type&&W.day<n.mind.nextReview+10)return;
+ n.mind.plan=best.type;n.mind.reason=best.reason;n.mind.lastDecision=W.day;
+ n.mind.nextReview=W.day+ri(13,27)+Math.round(n.abilities.discipline/10);
+ n.mind.considered=candidates.slice(0,3).map(c=>({type:c.type,score:Math.round(c.score)}));
+ W.mindDecisions=(W.mindDecisions||0)+1;
+}
+function applyIntention(n,s){
+ initMind(n);
+ if(n.role==='child'||n.trainingDays>0||n.age<12)return false;
+ if(!n.mind.plan||W.day-n.mind.lastAction<7)return false;
+ // Time and stamina are real opportunity costs. Most activities replace today's profession.
+ const h=householdFor(n);if(!h)return false;
+ const plan=n.mind.plan,a=n.abilities,r=personalResources(n),size=r.members;
+ let worked=false,success=false;
+ if(plan==='gather'&&n.energy>21&&W.forest>20){
+  const units=Math.max(0,Math.round((s==='겨울'?2.0:4.1)*(.4+a.awareness/110)*(.5+a.stamina/130)*W.forest/100));
+  if(units>0){stockFood('vegetables',units);householdDeposit(h,'vegetables',Math.min(units,Math.max(0,Math.floor(houseCapacity(h)-householdFood(h)))));W.forest=clip(W.forest-.07*units,12,100);n.site='forest';n.action='가족을 위해 뿌리채소 채집';worked=true;success=true}
+ }else if(plan==='reserve'&&W.products.grain>people().length*24){
+  const saved=householdDeposit(h,'grain',Math.min(5,Math.max(0,Math.round(10-r.perPerson))));
+  if(saved>0){n.action='가구의 겨울 식량 비축';worked=true;success=true}
+ }else if(plan==='social'){
+  const other=people().filter(p=>p.id!==n.id&&p.householdId!==n.householdId).sort((x,y)=>(n.relations?.[y.id]||0)-(n.relations?.[x.id]||0))[0];
+  if(other){newBond(n,other,2+Math.round(a.charisma/26));n.action=other.name+'과 협력 관계 다지기';n.site='home';worked=true;success=true}
+ }else if(plan==='help'&&householdFood(h)>size*18){
+  const needy=W.households.filter(x=>x.id!==h.id&&householdMembers(x).length&&householdFood(x)<householdMembers(x).length*5).sort((x,y)=>householdFood(x)-householdFood(y))[0];
+  if(needy){const kind=['grain','vegetables','fruit','meat','fish','cheese','milk','honey'].find(k=>h.stores[k]>=5);if(kind){const qty=Math.min(5,Math.floor(h.stores[k]),Math.floor(houseCapacity(needy)-householdFood(needy)));if(qty>0&&transferHouseholdStock(h,needy,kind,qty)){W.mindAid=(W.mindAid||0)+qty;n.action='곤궁한 이웃에게 식량 나눔';worked=true;success=true}}}
+ }else if(plan==='retrain'){
+  const alt=alternativeRoles(n);
+  if(alt&&startTraining(n,alt.role,'스스로 생계를 개선하려고')){W.selfRetrained=(W.selfRetrained||0)+1;worked=true;success=true}
+ }else if(plan==='improve'){
+  const plot=W.fields.filter(p=>p.state==='growing').sort((x,y)=>x.care-y.care)[0];
+  if(plot){plot.care=Math.min(1,plot.care+.08+a.dexterity/900);research('farm',n,.3+a.learning/120);n.action='다음 수확을 위해 농지 돌보기';n.site='fields';worked=true;success=true}
+ }else if(plan==='study'){
+  const domain=n.role==='farmer'||n.role==='gardener'?'farming':n.role==='carpenter'?'craft':n.role==='merchant'?'trade':n.role==='herder'?'care':n.role==='forager'||n.role==='hunter'?'foraging':'social';
+  n.skills[domain]=Math.min(99,n.skills[domain]+(.20+a.learning/230));n.skill=Math.min(96,n.skill+(.05+a.learning/750));n.action=domain==='farming'?'농법 연구':'새 기술 혼자 익히기';n.site='home';worked=true;success=true
+ }else if(plan==='rest'){
+  n.energy=Math.min(cap(n),n.energy+18+a.resilience/12);n.stress=Math.max(0,n.stress-4);n.action='미래 노동을 위한 자발적 휴식';n.site='home';worked=true;success=true
+ }else if(plan==='protest'){
+  W.grievance=clip(W.grievance+(.15+a.charisma/350),0,100);n.action='장로회에 식량 정책 개선 요구';n.site='castle';W.mindPetitions=(W.mindPetitions||0)+1;worked=true;success=true
+ }else if(plan==='trade'&&W.stage>=1){
+  const partner=W.households.filter(x=>x.id!==h.id&&householdMembers(x).length).find(x=>h.stores.grain>=7&&['fruit','vegetables','fish','milk','honey'].some(k=>x.stores[k]>=3));
+  const kind=partner?['fruit','vegetables','fish','milk','honey'].find(k=>partner.stores[k]>=3):null;
+  if(partner&&kind&&householdBarter(h,partner,6,kind,3)){n.action='스스로 물물교환 상대 찾기';W.mindTrades=(W.mindTrades||0)+1;worked=true;success=true}
+ }else if(plan==='escape'){
+  n.action='기근을 피해 마을 떠날 준비';W.mindDepartures=(W.mindDepartures||0)+1;leave(n,'생존할 식량을 찾으러');worked=true;success=true
+ }
+ if(worked){n.mind.lastAction=W.day;n.mind.successes+=success?1:0;n.mind.failures+=success?0:1;n.mind.outcomes.push({day:W.day,type:plan,success:!!success});if(n.mind.outcomes.length>9)n.mind.outcomes.shift();W.mindActions=(W.mindActions||0)+1;n.energy=Math.max(0,n.energy-(plan==='rest'?0:Math.max(6,Math.round(13-a.stamina/20))));return true}
+ // Abandon an impossible plan rather than mechanically retry it forever.
+ n.mind.failures++;n.mind.nextReview=W.day;n.mind.lastAction=W.day;
+ return false
+}
+function mindActionStats(){return {decisions:W.mindDecisions||0,actions:W.mindActions||0,selfRetrained:W.selfRetrained||0,trades:W.mindTrades||0,aid:W.mindAid||0,petitions:W.mindPetitions||0,departures:W.mindDepartures||0}}
 function gatherOutputs(n,s){if(n.role==='child'){n.site='home';n.action=n.age<8?'돌봄과 놀이':'가족일 배우기';n.energy=Math.min(cap(n),n.energy+6);return}if(trainCareer(n))return;if(n.energy<20||n.health<22){n.action='휴식·체력 회복';n.site='home';n.energy=Math.min(cap(n),n.energy+18);return}const eff=(.55+skill(n)/92)*(.5+n.energy/180);n.energy=Math.max(0,n.energy-(n.age>=60?23:17));n.site=chooseSite(n);n.yearWork++;
 if(n.role==='farmer'){farmerWork(n,eff,s)}
 else if(n.role==='forager'){const base={겨울:.5,봄:1.9,여름:3.7,가을:2.5}[s];const foraged=Math.max(0,Math.round(base*eff*(W.forest/100)));stockFood('fruit',Math.round(foraged*.65));stockFood('vegetables',foraged-Math.round(foraged*.65));householdDeposit(householdFor(n),'fruit',Math.round(foraged*.11));W.foragedLast+=foraged;W.wood+=Math.round((s==='겨울'?1.3:2.2)*eff*(W.forest/100));W.forest=clip(W.forest-.055*eff,24,100);n.action=s==='겨울'?'땔나무 수집':'과일·나물 채집'}
@@ -498,12 +597,12 @@ function maybeImmigration(){const p=people();if(W.abandoned||W.crisis?.active||W
 function checkExtinction(){const p=people();if(W.abandoned)return;if(!p.length||(p.length<=3&&W.food<30&&W.grievance>65)){W.abandoned=true;W.ruinsDate=date();addEvent('마지막 생존자들까지 떠나며 토성이 버려졌다. 왕국은 멸망했다.','emergency');return}if(p.length<8||W.grievance>74||W.food<p.length*8)W.state='몰락 위기';else if(W.stage>=2&&W.tech.farm.lvl>=2&&W.buildings.homes>=5)W.state='성장';else W.state='존속'}
 function expandFarmland(){ensureFields();if(W.abandoned||W.day%90!==0||W.fields.length>=27)return false;const pop=people().length,needed=Math.ceil(pop/3);if(W.fields.length>=needed||!chief()||W.wood<45||W.tools<1||people().filter(n=>['farmer','labor'].includes(n.role)).length<3)return false;if(W.food<pop*35&&W.wood<100)return false;W.wood-=45;W.tools--;const fieldOwner=W.households.filter(h=>householdMembers(h).some(n=>n.role==='farmer')).sort((a,b)=>W.fields.filter(p=>p.ownerHouseholdId===a.id).length-W.fields.filter(p=>p.ownerHouseholdId===b.id).length)[0];W.fields.push({id:W.fields.length,soil:ri(65,87),state:'fallow',planted:0,progress:0,care:.5,harvested:0,lastYield:0,ownerHouseholdId:fieldOwner?.id||null});W.landCleared=(W.landCleared||0)+1;W.forest=clip(W.forest-2,22,100);addEvent('주민들이 숲 가장자리를 개간해 새 밭을 만들었다.','success');return true}
 function emergencyFoodWork(n,s){if(n.age<15||n.health<24||n.energy<22)return false;const pop=people().length;if(pop<1)return false;const shortage=W.food<pop*62,disaster=!!W.crisis?.active;if(!shortage&&!disaster)return false;if(!['labor','carpenter','merchant','miller','cheesemaker','advisor','beekeeper','guard'].includes(n.role))return false;if(!shortage&&W.food>pop*100)return false;if(n.role==='guard'&&count('guard')<=1&&W.food>pop*17)return false;n.energy=Math.max(0,n.energy-11);n.site='forest';n.action='비상 구근·나물 채집';const forestFactor=clip((W.forest-12)/88,0,.95),amount=Math.max(0,Math.round((s==='겨울'?1.7:3.1)*(.55+skill(n)/110)*forestFactor*(n.traits.curiosity>60?1.18:1)));if(amount>0){stockFood('vegetables',amount);W.emergencyHarvests=(W.emergencyHarvests||0)+amount;W.forest=clip(W.forest-.028*amount,12,100)}return true}
-function dailyStep(){if(W.abandoned){return}W.day++;initHouseholdEconomy();W.cropLast=0;W.foragedLast=0;W.dailyProduction={};progressCrops();manageHerd();crisisChange();handleAging();const s=season();for(const n of people()){n.site=chooseSite(n);if(n.age>=60&&n.energy<30&&chance(.65)){n.action='체력 회복·조언';n.energy=Math.min(cap(n),n.energy+22);if(n.role==='farmer')research('farm',n,.24);continue}if(emergencyFoodWork(n,s))continue;gatherOutputs(n,s)}
+function dailyStep(){if(W.abandoned){return}W.day++;initHouseholdEconomy();W.cropLast=0;W.foragedLast=0;W.dailyProduction={};progressCrops();manageHerd();crisisChange();handleAging();const s=season();for(const n of people()){initMind(n);n.site=chooseSite(n);if(W.day%3===0||n.mind.lastDecision===0)chooseIntent(n);if(n.age>=60&&n.energy<30&&chance(.65)){n.action='체력 회복·조언';n.energy=Math.min(cap(n),n.energy+22);if(n.role==='farmer')research('farm',n,.24);continue}if(emergencyFoodWork(n,s))continue;if(applyIntention(n,s))continue;gatherOutputs(n,s)}
 if(W.food<W.foodCap*.8&&W.stage>=1&&W.food>people().length*70&&chance(.14))W.tech.trade.points+=.8;W.stageDays++;
 feedVillage();decayFood();if(W.day%3===0)socialConflict();if(W.day%12===0)jobMarket();if(W.day%45===0)familyStep();initHouseholdEconomy();if(W.day%90===0)expandFarmland();if(W.day%14===0)updateMarketPrices();agrarianPolitics();settleHouseholds();if(W.day%30===0){seekEmployment();seekCredit();settleEmployment()}if(W.day%15===0)settleDebt();if(W.day%90===0)mediateCredit();if(W.day%365===0)reviewPolitics();if(W.day%7===0){visitFriends();policyDecision();planBuilding()}if(W.day%14===0)rebellion();if(W.day%30===0)nextStage();maybeImmigration();checkExtinction();if(W.day%30===0)addEvent(`${date().year}년 ${date().month}월, 주민 ${people().length}명 · 비축 ${Math.round(W.food)}자루 · 농업 ${W.tech.farm.lvl}단계 · ${W.state||'존속'}.`);if(W.day%7===0)save()}
 function snapshot(){return {seed:W.seed,year:date().year,month:date().month,day:date().day,elapsed:W.day,pop:people().length,dead:W.dead,immigration:W.immigration,emigration:W.emigration,food:Math.round(W.food),births:W.births,marriages:W.marriages,clanCount:W.clans?.filter(c=>clanMembers(c).length).length||0,politicalSystem:W.governance?.system||'elected',politicalScale:W.governance?.scale||'village',politicalTitle:politicalTitle(),hamletCount:W.hamlets?.length||1,politicalChanges:W.governance?.politicalChanges||0,hereditaryTransitions:W.governance?.hereditaryTransitions||0,leaderHistory:W.governance?.headHistory?.length||0,familyMeals:W.familyMeals,inheritances:W.inheritances,landReallocated:W.landReallocated||0,householdInheritances:W.familyInheritance||0,propertyReversions:W.propertyReversions||0,houseReassigned:W.houseReassigned||0,children:people().filter(n=>n.role==='child').length,harvestWages:W.harvestWages||0,wageGrain:W.wageGrain||0,hiringDays:W.hiringDays||0,sharecropContracts:W.sharecropContracts||0,households:W.households?.length||0,privateFood:Math.round(W.households?.reduce((x,h)=>x+householdFood(h),0)||0),ownedHomes:W.households?.filter(h=>h.homeIndex!==null).length||0,grainPrice:W.marketPrices?.grain||null,householdBarters:W.householdBarters||0,householdAid:W.householdAid||0,householdSales:W.householdSales||0,loansMade:W.loansMade||0,loanDefaults:W.loanDefaults||0,loansRepaid:W.loansRepaid||0,loanMediations:W.loanMediations||0,activeLoans:W.loans?.filter(l=>['active','extended','defaulted'].includes(l.status)).length||0,contractsSigned:W.contractsSigned||0,contractsBroken:W.contractsBroken||0,contractWages:W.contractWages||0,wageClaims:W.wageClaims||0,debtLaborPayments:W.debtLaborPayments||0,marketDeals:W.marketDeals||0,landReforms:W.landReforms||0,landSales:W.landSales||0,gini:inequality().gini,landlessHouseholds:inequality().landless,apprentices:W.apprentices,careerChanges:W.careerChanges,harvests:W.harvests||0,failedHarvests:W.failedHarvests||0,grainProduced:W.fieldOutput||0,landCleared:W.landCleared||0,fields:W.fields?.map(p=>({id:p.id,state:p.state,soil:Math.round(p.soil),progress:Math.round(p.progress),lastYield:p.lastYield})),wood:Math.round(W.wood),stone:Math.round(W.stone),tools:Math.round(W.tools),stage:W.stage,tech:Object.fromEntries(Object.entries(W.tech).map(([k,v])=>[k,v.lvl])),buildings:{...W.buildings},grievance:Math.round(W.grievance),crimes:W.crimeCount,solvedCrimes:W.solvedCrimes,uprisings:W.uprisings,ruined:W.abandoned,crisis:W.crisis?.active||false,research:W.researchUnlocked,buildingCount:W.buildCompleted,policy:W.localPolicy,events:W.events.length}}
 function save(){try{localStorage.setItem('everworld_v26_clan_politics',JSON.stringify(W))}catch(e){}}
-function load(){try{const raw=JSON.parse(localStorage.getItem('everworld_v26_clan_politics')||'null');if(!raw||!raw.people||!raw.tech||raw.day<1)return false;W=raw;ensureProducts();ensureFields();ensureFamilies();initHouseholdEconomy();ensureDynasties();W.cattle??=4;W.fodder??=90;W.animalHealth??=85;W.pasture??=85;W.orchardTrees??=4;W.orchardHealth??=88;W.fishStock??=85;W.fishCap??=115;W.hives??=2;W.beeHealth??=85;W.tech.husbandry??={lvl:0,points:0};W.tech.orchard??={lvl:0,points:0};W.tech.preserve??={lvl:0,points:0};W.buildings.dairy??=1;W.buildings.cellar??=0;W.buildings.smokehouse??=0;selection=people()[0]?.id||null;return true}catch(e){return false}}
+function load(){try{const raw=JSON.parse(localStorage.getItem('everworld_v26_clan_politics')||'null');if(!raw||!raw.people||!raw.tech||raw.day<1)return false;W=raw;ensureProducts();ensureFields();ensureFamilies();initHouseholdEconomy();ensureDynasties();for(const n of W.people)initMind(n);W.cattle??=4;W.fodder??=90;W.animalHealth??=85;W.pasture??=85;W.orchardTrees??=4;W.orchardHealth??=88;W.fishStock??=85;W.fishCap??=115;W.hives??=2;W.beeHealth??=85;W.tech.husbandry??={lvl:0,points:0};W.tech.orchard??={lvl:0,points:0};W.tech.preserve??={lvl:0,points:0};W.buildings.dairy??=1;W.buildings.cellar??=0;W.buildings.smokehouse??=0;selection=people()[0]?.id||null;return true}catch(e){return false}}
 // ---------------- presentation ----------------
 const zones={castle:[.72,.18],fields:[.18,.64],forest:[.16,.20],home:[.69,.68],watch:[.85,.38],workshop:[.47,.77],building:[.5,.53],market:[.52,.40],pasture:[.57,.56],orchard:[.37,.38],river:[.36,.82]};
 function rect(x,y,w,h,fill){ctx.fillStyle=fill;ctx.fillRect(x,y,w,h)}function text(s,x,y,size=13,color='#e8e5d3'){ctx.fillStyle=color;ctx.font=`bold ${size}px system-ui`;ctx.textAlign='center';ctx.fillText(s,x,y)}
