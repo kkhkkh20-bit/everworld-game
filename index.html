@@ -140,7 +140,7 @@ const open=W.cases.filter(c=>c.status==='open'&&c.reported!==false&&c.lawSnapsho
 if(!open.length){n.lastTask='치안 순찰';if(chance(.32))travel(n,pick([1,2,3,4]));return}
 const c=open[0],targetLoc=c.suspect&&c.progress>=65?(byId(c.suspect)?.loc??c.loc):c.loc;n.lastTask='사건 수사';
 if(n.loc!==targetLoc){travel(n,targetLoc);return}
-c.progress+=randint(7,16)+Math.round(n.skill/14);
+c.progress+=randint(7,16)+Math.round(n.skill/14);c.evidence=Math.min(100,c.evidence+randint(3,8)+Math.round(n.skill/16));
 const offender=byId(c.actor);if(!offender?.alive){c.status='closed';return}
 if(c.suspect===null&&c.progress>=48&&chance(clamp((c.evidence+n.skill+c.progress)/350,.08,.72))){
 c.suspect=offender.id;c.evidence=Math.min(100,c.evidence+randint(16,29));log('justice',`${n.name}이(가) ${c.kind} 사건에서 증거를 확보했다.`,n.id)}
