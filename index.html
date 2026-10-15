@@ -164,9 +164,9 @@ function currentDebt(h){return h?W.loans.filter(l=>l.borrowerId===h.id&&['active
 function makeLoan(lender,borrower,kind,amount){ensureCredit();if(!lender||!borrower||lender.id===borrower.id||amount<2||currentDebt(borrower)>0||borrower.creditScore<20)return false;
  if(kind==='grain'){const reserve=householdMembers(lender).length*25+28;if(lender.stores.grain<amount+reserve||houseCapacity(borrower)-householdFood(borrower)<amount)return false;lender.stores.grain-=amount;borrower.stores.grain+=amount}
  else if(kind==='coin'){if(W.stage<2||lender.coins<amount+15)return false;lender.coins-=amount;borrower.coins+=amount}else return false;
- const fee=W.stage===0?0:W.stage===1?.04:.08;
+ const fee=W.stage===0?0:W.stage===1?.02:.05;
  const balance=amount+Math.round(amount*fee);
- const l={id:++W.nextLoanId,lenderId:lender.id,borrowerId:borrower.id,kind,principal:amount,balance,rate:fee,issued:W.day,due:W.day+(kind==='coin'?150:180),status:'active',missed:0,extended:0,repaid:0};
+ const l={id:++W.nextLoanId,lenderId:lender.id,borrowerId:borrower.id,kind,principal:amount,balance,rate:fee,issued:W.day,due:W.day+(kind==='coin'?240:360),status:'active',missed:0,extended:0,repaid:0};
  W.loans.push(l);W.loansMade++;borrower.creditHistory++;borrower.lastLoanDay=W.day;return l}
 function seekCredit(){if(W.day%30!==0||W.abandoned)return;ensureCredit();
 const homes=W.households.filter(h=>householdMembers(h).length);
@@ -185,14 +185,14 @@ for(const borrower of homes.filter(h=>currentDebt(h)===0&&h.creditScore>=25&&W.d
  return chance(clip(.20+lenderPerson.traits.empathy/260+relation/190+(borrower.creditScore-50)/230,.04,.90));
  });
  if(!lender)continue;
- const qty=kind==='coin'?Math.min(12,Math.floor(lender.coins-17)):Math.min(18,Math.floor(lender.stores.grain-(householdMembers(lender).length*25+28)),Math.floor(houseCapacity(borrower)-householdFood(borrower)));
+ const qty=kind==='coin'?Math.min(12,Math.floor(lender.coins-17)):Math.min(12,Math.floor(lender.stores.grain-(householdMembers(lender).length*25+28)),Math.floor(houseCapacity(borrower)-householdFood(borrower)));
  const loan=makeLoan(lender,borrower,kind,qty);
  if(loan&&chance(.3))addEvent('어려운 가구가 이웃의 '+(kind==='grain'?'곡물':'금화')+'을 빌려 생계를 이어간다.','ordinary');
  }
 }
 function repayLoan(l,amount){const borrower=household(l.borrowerId),lender=household(l.lenderId);if(!borrower||!lender||amount<=0)return 0;
  const due=Math.min(amount,l.balance);let paid=0;
- if(l.kind==='grain'){const buffer=householdMembers(borrower).length*15;const available=Math.max(0,(borrower.stores.grain||0)-buffer),room=houseCapacity(lender)-householdFood(lender);paid=Math.min(due,available,room);if(paid>0){borrower.stores.grain-=paid;lender.stores.grain+=paid}}
+ if(l.kind==='grain'){const buffer=householdMembers(borrower).length*7;const available=Math.max(0,(borrower.stores.grain||0)-buffer),room=houseCapacity(lender)-householdFood(lender);paid=Math.min(due,available,room);if(paid>0){borrower.stores.grain-=paid;lender.stores.grain+=paid}}
  else if(l.kind==='coin'){paid=Math.min(due,borrower.coins||0);borrower.coins-=paid;lender.coins+=paid}
  if(paid>0){l.balance=Math.max(0,l.balance-paid);l.repaid+=paid;W.loansRepaid+=paid;if(l.balance<.001){l.status='paid';borrower.creditScore=Math.min(100,borrower.creditScore+6)}}return paid
 }
@@ -201,11 +201,11 @@ for(const l of W.loans.filter(l=>['active','extended','defaulted'].includes(l.st
 const debtor=household(l.borrowerId),creditor=household(l.lenderId);
 if(!debtor||!creditor){l.status='writtenoff';continue}
 const available=l.kind==='grain'?(debtor.stores.grain||0):debtor.coins;
-if(available>0)repayLoan(l,Math.max(1,Math.ceil(l.balance*.20)));
+if(available>0)repayLoan(l,Math.max(1,Math.ceil(l.balance*.25)));
 if(l.status==='paid')continue;
 if(W.day<l.due)continue;
 l.missed++;
-if(l.extended<2&&(householdFood(debtor)<householdMembers(debtor).length*12||W.crisis?.active||chance(.35))){l.due=W.day+120;l.extended++;l.status='extended';W.loanRestructures++;if(chance(.25))addEvent('채무를 제때 갚지 못한 가구가 상환 기한을 연장받았다.','ordinary')}
+if(l.extended<2&&(householdFood(debtor)<householdMembers(debtor).length*12||W.crisis?.active||chance(.35))){l.due=W.day+150;l.extended++;l.status='extended';W.loanRestructures++;if(chance(.25))addEvent('채무를 제때 갚지 못한 가구가 상환 기한을 연장받았다.','ordinary')}
 else if(l.missed>=3&&l.status!=='defaulted'){l.status='defaulted';W.loanDefaults++;debtor.debtDefaults++;debtor.creditScore=Math.max(0,debtor.creditScore-18);W.grievance=clip(W.grievance+1.6,0,100);if(chance(.28))addEvent('가구가 빌린 식량을 갚지 못해 채무 불이행 상태가 됐다.','emergency')}
  }}
 function findLaborContract(n,ownerId){return W.laborContracts?.find(c=>c.workerId===n.id&&c.employerId===ownerId&&c.status==='active')||null}
