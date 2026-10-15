@@ -587,43 +587,92 @@ function applyIntention(n,s){
  const h=householdFor(n);if(!h)return false;
  const plan=n.mind.plan,a=n.abilities,r=personalResources(n),size=r.members;
  let worked=false,success=false;
- if(plan==='gather'&&n.energy>21&&W.forest>20){
+ if(plan==='sleep'){
+ const amount=clip(36+n.abilities.resilience*.12+(householdFor(n)?.homeIndex!==null?10:0),18,64);
+ satisfyNeeds(n,{sleep:1,safety:.07,play:.10},amount);n.energy=Math.min(cap(n),n.energy+Math.round(amount*.47));
+ n.action='부족한 잠을 보충하고 휴식';n.site='home';W.needsSleepActions=(W.needsSleepActions||0)+1;worked=true;success=true;
+ }else if(plan==='drink'){
+ // The river is a common water source. Access costs time and energy; no resource is created.
+ if(n.health>10){satisfyNeeds(n,{thirst:1,hygiene:.14},64);n.action='강에서 깨끗한 식수 길어오기';n.site='river';W.needsWaterActions=(W.needsWaterActions||0)+1;worked=true;success=true}
+ }else if(plan==='warm'){
+ const sheltered=householdFor(n)?.homeIndex!==null;
+ if(W.wood>=1&&season()==='겨울'){W.wood--;satisfyNeeds(n,{warmth:1,safety:.08},47);n.action='장작으로 불을 피워 몸 녹이기';worked=true;success=true}
+ else if(sheltered){satisfyNeeds(n,{warmth:1,safety:.06},32);n.action='집 안에서 추위 피하기';worked=true;success=true}
+ }else if(plan==='wash'){
+ if(n.energy>9){satisfyNeeds(n,{hygiene:1,esteem:.04},53);n.action='강가에서 몸과 옷 씻기';n.site='river';W.needsWashingActions=(W.needsWashingActions||0)+1;worked=true;success=true}
+ }else if(plan==='bond'){
+ const partner=W.people.find(p=>p.id===n.spouseId&&p.alive&&p.age>=18);
+ if(partner&&adultMutualInterest(n,partner)&&partner.needs.sleep<80&&partner.hunger<70&&n.needs.sleep<80&&n.hunger<70){
+ const gain=clip(33+(n.abilities.cooperation+partner.abilities.cooperation)/6,25,65);
+ satisfyNeeds(n,{intimacy:1,love:.55,belonging:.22,safety:.08},gain);
+ satisfyNeeds(partner,{intimacy:1,love:.55,belonging:.22,safety:.08},gain);
+ n.lastAffectionDay=W.day;partner.lastAffectionDay=W.day;newBond(n,partner,2);
+ n.action='배우자와 서로 애정을 나누는 시간';partner.action='배우자와 친밀한 시간';
+ W.adultBonding=(W.adultBonding||0)+1;worked=true;success=true
+ }
+ }else if(plan==='court'){
+ const eligible=people().filter(p=>p.id!==n.id&&p.age>=18&&p.alive&&!p.spouseId&&(p.relations?.[n.id]||0)>=-12)
+ .sort((a,b)=>(b.relations?.[n.id]||0)+(n.relations?.[b.id]||0)-(a.relations?.[n.id]||0)-(n.relations?.[a.id]||0));
+ const preferred=eligible.find(p=>p.id===n.romanticPartnerId);const partner=preferred||eligible[0];
+ if(partner&&adultMutualInterest(n,partner)){newBond(n,partner,ri(4,8));n.romanticPartnerId=partner.id;partner.romanticPartnerId=n.id;
+ satisfyNeeds(n,{love:1,belonging:.4,intimacy:.22},32);satisfyNeeds(partner,{love:1,belonging:.4,intimacy:.12},26);
+ n.action=partner.name+'과 서로의 마음 확인';partner.action=n.name+'과 교제';W.adultCourtships=(W.adultCourtships||0)+1;worked=true;success=true}
+ }else if(plan==='belong'){
+ const group=people().filter(p=>p.id!==n.id&&p.age>=10&&p.alive).slice(0,6);
+ if(group.length){const other=group[Math.floor(rand()*group.length)];newBond(n,other,2+Math.round(a.cooperation/35));satisfyNeeds(n,{belonging:1,love:.18,play:.3},37);n.action='마을 모임에서 이웃들과 교류';W.communityMeetups=(W.communityMeetups||0)+1;worked=true;success=true}
+ }else if(plan==='recognition'){
+ if(n.energy>24){const quality=(a.charisma+a.discipline+a.cooperation)/3;const work=quality>=45?'공동 작업을 이끌어 주민에게 인정받기':'마을 일에 적극 참여해 신뢰 얻기';
+ n.action=work;W.morale=clip(W.morale+.10+quality/1000,0,100);satisfyNeeds(n,{esteem:1,autonomy:.42,meaning:.1},24+quality*.12);
+ const clan=clanById(n.clanId);if(clan)clan.prestige=clip((clan.prestige||0)+.17,0,100);W.recognitionActs=(W.recognitionActs||0)+1;worked=true;success=true}
+ }else if(plan==='creative'){
+ if(n.energy>26){const idea=(a.creativity+a.learning+a.reasoning)/3;const area=n.role==='farmer'||n.role==='gardener'?'farm':n.role==='carpenter'?'craft':n.role==='merchant'?'trade':n.role==='herder'?'husbandry':'preserve';
+ research(area,n,.20+idea/260);
+ satisfyNeeds(n,{growth:1,meaning:.58,autonomy:.25,esteem:.22},32);
+ n.action='새로운 '+({farm:'농법',craft:'제작법',trade:'상업 방식',husbandry:'목축법',preserve:'보존 방법'}[area])+' 실험';
+ W.ideasAttempted=(W.ideasAttempted||0)+1;worked=true;success=true}
+ }else if(plan==='meaning'){
+ const clan=clanById(n.clanId);if(clan)clan.prestige=clip((clan.prestige||0)+.09,0,100);
+ satisfyNeeds(n,{meaning:1,growth:.4,esteem:.28},32);n.action='가족과 공동체의 미래를 생각하고 계획';W.meaningActions=(W.meaningActions||0)+1;worked=true;success=true
+ }else if(plan==='play'){
+ n.energy=Math.max(0,n.energy-4);satisfyNeeds(n,{play:1,belonging:.38,autonomy:.20},49);
+ n.action='놀이와 취미로 시간을 보내기';n.site='home';W.playActions=(W.playActions||0)+1;worked=true;success=true
+ }else if(plan==='gather'&&n.energy>21&&W.forest>20){
   const units=Math.max(0,Math.round((s==='겨울'?2.0:4.1)*(.4+a.awareness/110)*(.5+a.stamina/130)*W.forest/100));
   if(units>0){stockFood('vegetables',units);householdDeposit(h,'vegetables',Math.min(units,Math.max(0,Math.floor(houseCapacity(h)-householdFood(h)))));W.forest=clip(W.forest-.07*units,12,100);n.site='forest';n.action='가족을 위해 뿌리채소 채집';worked=true;success=true}
  }else if(plan==='reserve'&&W.products.grain>people().length*24){
   const saved=householdDeposit(h,'grain',Math.min(5,Math.max(0,Math.round(10-r.perPerson))));
-  if(saved>0){n.action='가구의 겨울 식량 비축';worked=true;success=true}
+  if(saved>0){satisfyNeeds(n,{safety:.7,autonomy:.15},Math.min(12,saved));n.action='가구의 겨울 식량 비축';worked=true;success=true}
  }else if(plan==='social'){
   const options=people().filter(p=>p.id!==n.id&&p.householdId!==n.householdId).map(p=>{const otherFamily=householdFor(p);
  const trust=n.relations?.[p.id]||0,need=r.perPerson<8,practical=need?Math.min(24,householdFood(otherFamily)/Math.max(1,householdMembers(otherFamily).length)):0;
  const compatible=(p.traits.empathy+n.traits.empathy)/11+(p.abilities?.cooperation||45)/8,novel=trust>60?-17:trust<0?-15:12;
  return {p,score:compatible+practical+novel+trust*.14+rand()*25}}).sort((x,y)=>y.score-x.score);
  const other=options.slice(0,Math.min(3,options.length))[Math.floor(rand()*Math.min(3,options.length))]?.p;
-  if(other){newBond(n,other,2+Math.round(a.charisma/26));n.action=other.name+'과 협력 관계 다지기';n.site='home';worked=true;success=true}
+  if(other){newBond(n,other,2+Math.round(a.charisma/26));satisfyNeeds(n,{belonging:1,love:.24,safety:.13},19);n.action=other.name+'과 협력 관계 다지기';n.site='home';worked=true;success=true}
  }else if(plan==='help'&&householdFood(h)>size*18){
   const needy=W.households.filter(x=>x.id!==h.id&&householdMembers(x).length&&householdFood(x)<householdMembers(x).length*5).sort((x,y)=>householdFood(x)-householdFood(y))[0];
   if(needy){const kind=['grain','vegetables','fruit','meat','fish','cheese','milk','honey'].find(k=>h.stores[k]>=5);if(kind){const qty=Math.min(5,Math.floor(h.stores[kind]),Math.floor(houseCapacity(needy)-householdFood(needy)));if(qty>0&&transferHouseholdStock(h,needy,kind,qty)){W.mindAid=(W.mindAid||0)+qty;n.action='곤궁한 이웃에게 식량 나눔';worked=true;success=true}}}
  }else if(plan==='retrain'){
   const alt=alternativeRoles(n);
-  if(alt&&startTraining(n,alt.role,'스스로 생계를 개선하려고')){W.selfRetrained=(W.selfRetrained||0)+1;worked=true;success=true}
+  if(alt&&startTraining(n,alt.role,'스스로 생계를 개선하려고')){satisfyNeeds(n,{autonomy:.8,growth:.3},20);W.selfRetrained=(W.selfRetrained||0)+1;worked=true;success=true}
  }else if(plan==='improve'){
   const plot=W.fields.filter(p=>p.state==='growing').sort((x,y)=>x.care-y.care)[0];
-  if(plot){plot.care=Math.min(1,plot.care+.08+a.dexterity/900);research('farm',n,.3+a.learning/120);n.action='다음 수확을 위해 농지 돌보기';n.site='fields';worked=true;success=true}
+  if(plot){plot.care=Math.min(1,plot.care+.08+a.dexterity/900);research('farm',n,.3+a.learning/120);satisfyNeeds(n,{growth:.35,autonomy:.2,safety:.2},17);n.action='다음 수확을 위해 농지 돌보기';n.site='fields';worked=true;success=true}
  }else if(plan==='study'){
   const domain=n.role==='farmer'||n.role==='gardener'?'farming':n.role==='carpenter'?'craft':n.role==='merchant'?'trade':n.role==='herder'?'care':n.role==='forager'||n.role==='hunter'?'foraging':'social';
-  n.skills[domain]=Math.min(99,n.skills[domain]+(.20+a.learning/230));n.skill=Math.min(96,n.skill+(.05+a.learning/750));n.action=domain==='farming'?'농법 연구':'새 기술 혼자 익히기';n.site='home';worked=true;success=true
+  n.skills[domain]=Math.min(99,n.skills[domain]+(.20+a.learning/230));n.skill=Math.min(96,n.skill+(.05+a.learning/750));satisfyNeeds(n,{growth:1,meaning:.35},25);n.action=domain==='farming'?'농법 연구':'새 기술 혼자 익히기';n.site='home';worked=true;success=true
  }else if(plan==='mentor'){
   const younger=people().filter(x=>x.id!==n.id&&x.age>=12&&x.age<31).sort((x,y)=>Number(y.clanId===n.clanId)-Number(x.clanId===n.clanId)||x.skill-y.skill)[0];
   if(younger){initMind(younger);const domain=n.role==='farmer'||n.role==='gardener'?'farming':n.role==='carpenter'?'craft':n.role==='merchant'?'trade':n.role==='forager'?'foraging':'social';const diff=Math.max(0,n.skills[domain]-younger.skills[domain]);
-  const gain=Math.min(1.25,.25+diff*.015)*(0.5+n.abilities.cooperation/120);younger.skills[domain]=Math.min(99,younger.skills[domain]+gain);younger.skill=Math.min(96,younger.skill+gain*.07);newBond(n,younger,2);n.action=younger.name+'에게 경험과 기술 전수';n.site='home';W.mentoringSessions=(W.mentoringSessions||0)+1;worked=true;success=true}
+  const gain=Math.min(1.25,.25+diff*.015)*(0.5+n.abilities.cooperation/120);younger.skills[domain]=Math.min(99,younger.skills[domain]+gain);younger.skill=Math.min(96,younger.skill+gain*.07);newBond(n,younger,2);satisfyNeeds(n,{meaning:.85,esteem:.52,love:.16},26);n.action=younger.name+'에게 경험과 기술 전수';n.site='home';W.mentoringSessions=(W.mentoringSessions||0)+1;worked=true;success=true}
  }else if(plan==='rest'){
-  n.energy=Math.min(cap(n),n.energy+18+a.resilience/12);n.stress=Math.max(0,n.stress-4);n.action='미래 노동을 위한 자발적 휴식';n.site='home';worked=true;success=true
+  n.energy=Math.min(cap(n),n.energy+18+a.resilience/12);satisfyNeeds(n,{sleep:.45,play:.75,safety:.1},20);n.stress=Math.max(0,n.stress-4);n.action='미래 노동을 위한 자발적 휴식';n.site='home';worked=true;success=true
  }else if(plan==='protest'){
-  W.grievance=clip(W.grievance+(.15+a.charisma/350),0,100);n.action='장로회에 식량 정책 개선 요구';n.site='castle';W.mindPetitions=(W.mindPetitions||0)+1;worked=true;success=true
+  W.grievance=clip(W.grievance+(.15+a.charisma/350),0,100);satisfyNeeds(n,{autonomy:.58,esteem:.2,safety:.08},17);n.action='장로회에 식량 정책 개선 요구';n.site='castle';W.mindPetitions=(W.mindPetitions||0)+1;worked=true;success=true
  }else if(plan==='trade'&&W.stage>=1){
   const partner=W.households.filter(x=>x.id!==h.id&&householdMembers(x).length).find(x=>h.stores.grain>=7&&['fruit','vegetables','fish','milk','honey'].some(k=>x.stores[k]>=3));
   const kind=partner?['fruit','vegetables','fish','milk','honey'].find(k=>partner.stores[k]>=3):null;
-  if(partner&&kind&&householdBarter(h,partner,6,kind,3)){n.action='스스로 물물교환 상대 찾기';W.mindTrades=(W.mindTrades||0)+1;worked=true;success=true}
+  if(partner&&kind&&householdBarter(h,partner,6,kind,3)){satisfyNeeds(n,{autonomy:.6,esteem:.2},20);n.action='스스로 물물교환 상대 찾기';W.mindTrades=(W.mindTrades||0)+1;worked=true;success=true}
  }else if(plan==='escape'){
   n.action='기근을 피해 마을 떠날 준비';W.mindDepartures=(W.mindDepartures||0)+1;leave(n,'생존할 식량을 찾으러');worked=true;success=true
  }
@@ -688,7 +737,7 @@ function expandFarmland(){ensureFields();if(W.abandoned||W.day%90!==0||W.fields.
 function emergencyFoodWork(n,s){if(n.age<15||n.health<24||n.energy<22)return false;const pop=people().length;if(pop<1)return false;const shortage=W.food<pop*62,disaster=!!W.crisis?.active;if(!shortage&&!disaster)return false;if(!['labor','carpenter','merchant','miller','cheesemaker','advisor','beekeeper','guard'].includes(n.role))return false;if(!shortage&&W.food>pop*100)return false;if(n.role==='guard'&&count('guard')<=1&&W.food>pop*17)return false;n.energy=Math.max(0,n.energy-11);n.site='forest';n.action='비상 구근·나물 채집';const forestFactor=clip((W.forest-12)/88,0,.95),amount=Math.max(0,Math.round((s==='겨울'?1.7:3.1)*(.55+skill(n)/110)*forestFactor*(n.traits.curiosity>60?1.18:1)));if(amount>0){stockFood('vegetables',amount);W.emergencyHarvests=(W.emergencyHarvests||0)+amount;W.forest=clip(W.forest-.028*amount,12,100)}return true}
 function dailyStep(){if(W.abandoned){return}W.day++;initHouseholdEconomy();W.cropLast=0;W.foragedLast=0;W.dailyProduction={};progressCrops();manageHerd();crisisChange();handleAging();const s=season();for(const n of people()){initMind(n);n.site=chooseSite(n);if(W.day%3===0||n.mind.lastDecision===0)chooseIntent(n);if(n.age>=60&&n.energy<30&&chance(.65)){n.action='체력 회복·조언';n.energy=Math.min(cap(n),n.energy+22);if(n.role==='farmer')research('farm',n,.24);continue}if(emergencyFoodWork(n,s))continue;if(applyIntention(n,s))continue;gatherOutputs(n,s)}
 if(W.food<W.foodCap*.8&&W.stage>=1&&W.food>people().length*70&&chance(.14))W.tech.trade.points+=.8;W.stageDays++;
-feedVillage();for(const n of people()){initMind(n);const h=householdFor(n),debt=currentDebt(h);n.stress=clip(n.stress+(n.hunger>60?1.4:0)+(debt>15?.15:0)+(n.health<30?.4:0)-(friends(n).length>0?.28:0)-(n.energy>55?.08:0),0,100)}decayFood();if(W.day%3===0)socialConflict();if(W.day%12===0)jobMarket();if(W.day%45===0)familyStep();initHouseholdEconomy();if(W.day%90===0)expandFarmland();if(W.day%14===0)updateMarketPrices();agrarianPolitics();settleHouseholds();if(W.day%30===0){seekEmployment();seekCredit();settleEmployment()}if(W.day%15===0)settleDebt();if(W.day%90===0)mediateCredit();if(W.day%365===0)reviewPolitics();if(W.day%7===0){visitFriends();policyDecision();planBuilding()}if(W.day%14===0)rebellion();if(W.day%30===0)nextStage();maybeImmigration();checkExtinction();if(W.day%30===0)addEvent(`${date().year}년 ${date().month}월, 주민 ${people().length}명 · 비축 ${Math.round(W.food)}자루 · 농업 ${W.tech.farm.lvl}단계 · ${W.state||'존속'}.`);if(W.day%7===0)save()}
+feedVillage();for(const n of people()){initMind(n);updateNeedsDaily(n,s);const h=householdFor(n),debt=currentDebt(h);n.stress=clip(n.stress+(n.hunger>60?1.4:0)+(debt>15?.15:0)+(n.health<30?.4:0)-(friends(n).length>0?.28:0)-(n.energy>55?.08:0),0,100)}decayFood();if(W.day%3===0)socialConflict();if(W.day%12===0)jobMarket();if(W.day%45===0)familyStep();initHouseholdEconomy();if(W.day%90===0)expandFarmland();if(W.day%14===0)updateMarketPrices();agrarianPolitics();settleHouseholds();if(W.day%30===0){seekEmployment();seekCredit();settleEmployment()}if(W.day%15===0)settleDebt();if(W.day%90===0)mediateCredit();if(W.day%365===0)reviewPolitics();if(W.day%7===0){visitFriends();policyDecision();planBuilding()}if(W.day%14===0)rebellion();if(W.day%30===0)nextStage();maybeImmigration();checkExtinction();if(W.day%30===0)addEvent(`${date().year}년 ${date().month}월, 주민 ${people().length}명 · 비축 ${Math.round(W.food)}자루 · 농업 ${W.tech.farm.lvl}단계 · ${W.state||'존속'}.`);if(W.day%7===0)save()}
 function snapshot(){return {seed:W.seed,year:date().year,month:date().month,day:date().day,elapsed:W.day,pop:people().length,dead:W.dead,immigration:W.immigration,emigration:W.emigration,food:Math.round(W.food),births:W.births,marriages:W.marriages,clanCount:W.clans?.filter(c=>clanMembers(c).length).length||0,politicalSystem:W.governance?.system||'elected',politicalScale:W.governance?.scale||'village',politicalTitle:politicalTitle(),hamletCount:W.hamlets?.length||1,politicalChanges:W.governance?.politicalChanges||0,hereditaryTransitions:W.governance?.hereditaryTransitions||0,leaderHistory:W.governance?.headHistory?.length||0,familyMeals:W.familyMeals,inheritances:W.inheritances,landReallocated:W.landReallocated||0,householdInheritances:W.familyInheritance||0,propertyReversions:W.propertyReversions||0,houseReassigned:W.houseReassigned||0,children:people().filter(n=>n.role==='child').length,harvestWages:W.harvestWages||0,wageGrain:W.wageGrain||0,hiringDays:W.hiringDays||0,sharecropContracts:W.sharecropContracts||0,households:W.households?.length||0,privateFood:Math.round(W.households?.reduce((x,h)=>x+householdFood(h),0)||0),ownedHomes:W.households?.filter(h=>h.homeIndex!==null).length||0,grainPrice:W.marketPrices?.grain||null,householdBarters:W.householdBarters||0,householdAid:W.householdAid||0,householdSales:W.householdSales||0,loansMade:W.loansMade||0,loanDefaults:W.loanDefaults||0,loansRepaid:W.loansRepaid||0,loanMediations:W.loanMediations||0,activeLoans:W.loans?.filter(l=>['active','extended','defaulted'].includes(l.status)).length||0,contractsSigned:W.contractsSigned||0,contractsBroken:W.contractsBroken||0,contractWages:W.contractWages||0,wageClaims:W.wageClaims||0,debtLaborPayments:W.debtLaborPayments||0,marketDeals:W.marketDeals||0,landReforms:W.landReforms||0,landSales:W.landSales||0,gini:inequality().gini,landlessHouseholds:inequality().landless,apprentices:W.apprentices,careerChanges:W.careerChanges,harvests:W.harvests||0,failedHarvests:W.failedHarvests||0,grainProduced:W.fieldOutput||0,landCleared:W.landCleared||0,fields:W.fields?.map(p=>({id:p.id,state:p.state,soil:Math.round(p.soil),progress:Math.round(p.progress),lastYield:p.lastYield})),wood:Math.round(W.wood),stone:Math.round(W.stone),tools:Math.round(W.tools),stage:W.stage,tech:Object.fromEntries(Object.entries(W.tech).map(([k,v])=>[k,v.lvl])),buildings:{...W.buildings},grievance:Math.round(W.grievance),crimes:W.crimeCount,solvedCrimes:W.solvedCrimes,uprisings:W.uprisings,ruined:W.abandoned,crisis:W.crisis?.active||false,research:W.researchUnlocked,buildingCount:W.buildCompleted,policy:W.localPolicy,mind:mindActionStats(),mindActionsByPlan:Object.fromEntries(['gather','reserve','social','help','retrain','improve','study','mentor','rest','protest','trade','escape'].map(k=>[k,W.people.filter(n=>n.alive&&n.mind?.plan===k).length])),events:W.events.length}}
 function save(){try{localStorage.setItem('everworld_v27_personal_agents',JSON.stringify(W))}catch(e){}}
 function load(){try{const raw=JSON.parse(localStorage.getItem('everworld_v27_personal_agents')||'null');if(!raw||!raw.people||!raw.tech||raw.day<1)return false;W=raw;ensureProducts();ensureFields();ensureFamilies();initHouseholdEconomy();ensureDynasties();for(const n of W.people)initMind(n);W.cattle??=4;W.fodder??=90;W.animalHealth??=85;W.pasture??=85;W.orchardTrees??=4;W.orchardHealth??=88;W.fishStock??=85;W.fishCap??=115;W.hives??=2;W.beeHealth??=85;W.tech.husbandry??={lvl:0,points:0};W.tech.orchard??={lvl:0,points:0};W.tech.preserve??={lvl:0,points:0};W.buildings.dairy??=1;W.buildings.cellar??=0;W.buildings.smokehouse??=0;selection=people()[0]?.id||null;return true}catch(e){return false}}
