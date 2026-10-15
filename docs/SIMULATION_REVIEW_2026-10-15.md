@@ -3,7 +3,7 @@
 작성일: 2026-10-15  
 대상: v1.2, `main` 브랜치  
 기준: 고정 월드 시드 10개(`1, 7, 25, 51, 125, 1442, 1893, 4762, 8321, 9999`)를 각각 30일, 90일, 180일 자동 재생  
-재현: `node tests/simulate.mjs` 또는 [Simulation regression audit](../actions) 워크플로
+재현: `node tests/simulate.mjs` 또는 [Simulation regression audit](https://github.com/kkhkkh20-bit/everworld-game/actions/workflows/simulation-audit.yml) 워크플로
 
 > 주의: 이 수치는 가상 판타지 마을 모델의 출력이다. 실제 중세 사회의 경험적 통계와 일치한다는 뜻이 아니다. 여러 시드를 평균한 값이므로 특정 회차에서는 크게 다를 수 있다.
 
