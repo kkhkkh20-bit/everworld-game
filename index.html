@@ -117,7 +117,7 @@ const fine=Math.min(suspect.gold,law.fine);suspect.gold-=fine;W.treasury+=fine;
 suspect.jailed=Math.max(suspect.jailed,law.jail);travel(suspect,3);
 if(law.removeOffice&&suspect.seatId){vacateSeat(suspect,'부패 유죄');if(['관리','치안대'].includes(suspect.role)){suspect.role='방랑자';suspect.workLoc=1;suspect.homeLoc=5}}
 shiftTrust(suspect,officer,-24);c.status='convicted';c.sentence={restitution,fine,jail:law.jail,day:W.day,version:c.lawVersion};
-W.arrests++;W.convictions++;officer.lastTask='수사 종결';
+W.arrests++;W.convictions++;suspect.convictions=(suspect.convictions||0)+1;officer.lastTask='수사 종결';
 log('justice',`${officer.name}이(가) ${suspect.name}을(를) ${c.kind}로 체포했다. 배상 ${restitution}G·벌금 ${fine}G·구금 ${law.jail}시간.`,officer.id);
 return true}
 function payRole(n,amount,source){if(amount<=0)return 0;const wallet=source==='royal'?'treasury':'market';const paid=Math.min(amount,Math.max(0,Math.floor(W[wallet]||0)));W[wallet]-=paid;const tax=source==='royal'?0:Math.min(paid,Math.round(paid*.20));W.treasury+=tax;n.gold+=paid-tax;n.incomeToday=(n.incomeToday||0)+paid-tax;n.totalEarned=(n.totalEarned||0)+paid-tax;n.expensesToday=(n.expensesToday||0)+tax;n.totalSpent=(n.totalSpent||0)+tax;return paid-tax}
@@ -173,6 +173,12 @@ if(n.gold<(W.foodPrice||2)+2||n.hunger>66){socialSafetyNet(n,'food');seekReferra
 const need=clamp((26-n.gold)/26,0,1),dishonest=100-n.p.honesty;const ordinary=80+Math.max(0,(n.goal==='안전하게 살기'?35:0));
 let weights={work:ordinary,rest:12,travel:11,trade:9,scam:2+dishonest*.14+n.p.greed*.11+need*25,steal:1+dishonest*.1+need*20,attack:Math.max(.5,n.p.aggression*.09-n.p.fear*.04),politics:1+n.p.ambition*.12,help:2+n.p.empathy*.13};
 if(n.role==='도적'){weights.scam+=22;weights.steal+=29;weights.work=12}if(n.goal==='복수하기')weights.attack+=15;if(n.gold<4)weights.work+=65;if(n.hunger>57){weights.work+=58;weights.scam+=7;weights.steal+=7}if(n.role==='왕')weights.politics+=25;if(n.role==='치안대')weights.work+=35;if(!v){weights.scam=weights.steal=weights.attack=weights.trade=weights.help=0;weights.travel+=30}
+const environment=clamp(.42+(W.culture-50)/72+(100-W.order)/320,.12,1.36);
+const habit=Math.pow(.76,n.convictions||0);
+const perceivedRisk=clamp((n.p.fear/100)*(W.order/100)*((W.laws?.['절도']?.jail||18)/80),0,.55);
+weights.scam*=environment*habit*(1-perceivedRisk*.8);
+weights.steal*=environment*habit*(1-perceivedRisk);
+weights.attack*=Math.max(.2,environment*.72)*habit;
 if(v?.known[n.id]?.fraud>1)weights.scam*=.1;
 let sum=Object.values(weights).reduce((a,b)=>a+Math.max(0,b),0),r=rand(0,sum),action='work';for(const [k,value] of Object.entries(weights)){r-=Math.max(0,value);if(r<=0){action=k;break}}
 if(action==='work'){if(W.hour>=7&&W.hour<18&&(n.lastWorkDay!==W.day||n.jobPaidToday<2)){if(n.loc!==n.workLoc){travel(n,n.workLoc);n.activity='일터 이동'}else jobShift(n)}else{n.lastTask='휴식';n.stress=Math.max(0,n.stress-2)}}else if(action==='rest'){n.stress=Math.max(0,n.stress-9);n.lastTask='휴식'}else if(action==='travel')travel(n,randint(0,sites.length-1));else if(action==='trade'){if(v&&chance(.3))give(n,v);else if(W.hour>=7&&W.hour<18&&(n.lastWorkDay!==W.day||n.jobPaidToday<2))jobShift(n)}else if(action==='scam')scam(n,v);else if(action==='steal')steal(n,v);else if(action==='attack')assault(n,v);else if(action==='politics')politics(n);else if(action==='help')give(n,v)}
