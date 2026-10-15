@@ -565,7 +565,7 @@ function adultMutualInterest(a,b){
 function evaluateChoices(n){
  initMind(n);const needs=initNeeds(n),tiers=needsScores(n);const a=n.abilities,m=n.motives,t=n.traits,r=personalResources(n),h=r.house,scarce=W.food<people().length*38||W.crisis?.active;
  const fatigue=100*n.energy/(cap(n)||100),lowFood=clip(70-r.perPerson*2.4,0,80),agePenalty=n.age>57?(n.age-57)*1.3:0;
- const survivalEmergency=(n.hunger>74||r.perPerson<2||W.food<people().length*4)&&n.age>=15;
+ const survivalEmergency=(n.hunger>74||((r.perPerson<2||W.food<people().length*4)&&W.food<people().length*25))&&n.age>=15;
  const options=[],lateAutumn=date().month>=8&&date().month<=11;const upperRoom=clip((tiers.physiological-30)/55,.15,1),recognitionRoom=clip((tiers.connection-25)/60,.17,1);
  const add=(type,score,why,enabled=true)=>{if(enabled&&Number.isFinite(score)){const recent=n.mind.outcomes.filter(o=>o.type===type).slice(-4);
  const lessons=recent.reduce((sum,o)=>sum+(o.success?2:-5),0)*(.5+a.learning/130),habit=n.mind.plan===type?a.discipline*.055:0;
