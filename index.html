@@ -517,7 +517,7 @@ function applyIntention(n,s){
   if(other){newBond(n,other,2+Math.round(a.charisma/26));n.action=other.name+'과 협력 관계 다지기';n.site='home';worked=true;success=true}
  }else if(plan==='help'&&householdFood(h)>size*18){
   const needy=W.households.filter(x=>x.id!==h.id&&householdMembers(x).length&&householdFood(x)<householdMembers(x).length*5).sort((x,y)=>householdFood(x)-householdFood(y))[0];
-  if(needy){const kind=['grain','vegetables','fruit','meat','fish','cheese','milk','honey'].find(k=>h.stores[k]>=5);if(kind){const qty=Math.min(5,Math.floor(h.stores[k]),Math.floor(houseCapacity(needy)-householdFood(needy)));if(qty>0&&transferHouseholdStock(h,needy,kind,qty)){W.mindAid=(W.mindAid||0)+qty;n.action='곤궁한 이웃에게 식량 나눔';worked=true;success=true}}}
+  if(needy){const kind=['grain','vegetables','fruit','meat','fish','cheese','milk','honey'].find(k=>h.stores[k]>=5);if(kind){const qty=Math.min(5,Math.floor(h.stores[kind]),Math.floor(houseCapacity(needy)-householdFood(needy)));if(qty>0&&transferHouseholdStock(h,needy,kind,qty)){W.mindAid=(W.mindAid||0)+qty;n.action='곤궁한 이웃에게 식량 나눔';worked=true;success=true}}}
  }else if(plan==='retrain'){
   const alt=alternativeRoles(n);
   if(alt&&startTraining(n,alt.role,'스스로 생계를 개선하려고')){W.selfRetrained=(W.selfRetrained||0)+1;worked=true;success=true}
