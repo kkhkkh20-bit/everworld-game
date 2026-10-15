@@ -494,8 +494,15 @@ function needsScores(n){
  const fulfillment=clip(100-(x.growth*.55+x.meaning*.45),0,100);
  let tier=1;
  if(physiological>=54){tier=2;if(safety>=53){tier=3;if(connection>=48){tier=4;if(respect>=46)tier=5}}}
- if(n.maslowLevel!==tier){if(n.maslowLevel>=2&&tier<n.maslowLevel&&W.day>30)W.maslowRegressions=(W.maslowRegressions||0)+1;
- if(tier>n.maslowLevel&&W.day>30)W.maslowTransitions=(W.maslowTransitions||0)+1}
+ if(n.maslowLevel!==tier){
+ const before=n.maslowLevel;
+ if(before>=2&&tier<before&&W.day>30)W.maslowRegressions=(W.maslowRegressions||0)+1;
+ if(tier>before&&W.day>30)W.maslowTransitions=(W.maslowTransitions||0)+1;
+ if(W.day>90&&W.day-(n.lastMaslowEventDay||-999)>180){
+   if(tier===5&&before<5){addEvent(n.name+'이 오랜 안정을 바탕으로 자신의 재능과 삶의 의미를 추구한다.','success');n.lastMaslowEventDay=W.day}
+   else if(tier===1&&before>=3&&n.hunger>55){addEvent(n.name+'이 생활 위기로 목표를 내려놓고 생존에 집중한다.','emergency');n.lastMaslowEventDay=W.day}
+ }
+}
  n.maslowLevel=tier;
  return {physiological,safety,connection,respect,fulfillment,tier,stockPerPerson:per};
 }
@@ -513,10 +520,10 @@ function updateNeedsDaily(n,seasonName){
  x.safety=clip(x.safety+(W.crisis?.active?6:0)+(n.hunger>55?5:0)+(currentDebt(householdFor(n))>10?2:0)-(shelter?3:0)-(W.grievance<30?2:0),0,100);
  x.belonging=clip(x.belonging+(positiveFriends?2:5)-(spouse?2:0),0,100);
  x.love=clip(x.love+(spouse?1:3)-(positiveFriends>2?1:0),0,100);
- x.esteem=clip(x.esteem+2-(n.action?.includes('성공')?4:0),0,100);
- x.autonomy=clip(x.autonomy+2+(n.trainingDays?2:0),0,100);
+ x.esteem=clip(x.esteem+1.15-(n.action?.includes('성공')?4:0),0,100);
+ x.autonomy=clip(x.autonomy+1.25+(n.trainingDays?1:0),0,100);
  x.play=clip(x.play+(hardWork?5:2),0,100);
- x.meaning=clip(x.meaning+1,0,100);x.growth=clip(x.growth+2,0,100);
+ x.meaning=clip(x.meaning+1,0,100);x.growth=clip(x.growth+1.5,0,100);
  if(n.age>=18){
    const highDesire=clip(n.motives?.family||50,10,95);
    x.intimacy=clip(x.intimacy+(spouse?1.1:2)+(highDesire-50)/70,0,100);
