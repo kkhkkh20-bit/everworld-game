@@ -119,13 +119,33 @@ if(W.stage>=1&&count('carpenter')===0){if(startTraining(p.find(n=>n.role==='labo
 if(W.food>pop*150&&count('farmer')>needed+1&&W.stage>=1){const n=p.find(n=>n.role==='farmer'&&n.age<45&&!n.trainingDays);if(n&&chance(.15))startTraining(n,'merchant','잉여 곡물 판매')}
 }
 
+function householdAssets(h){return householdFood(h)+(h.coins||0)*3+(h.cattleOwned||0)*115+(h.homeIndex!==null?160:0)+W.fields.filter(p=>p.ownerHouseholdId===h.id).length*130}
+function householdClass(h){const land=W.fields.filter(p=>p.ownerHouseholdId===h.id).length;
+if(land>=2&&householdAssets(h)>=400)return '지주 농가';
+if(land>=1)return '자작농';
+if(householdMembers(h).some(n=>n.role==='merchant'))return '상업 가구';
+if(h.homeIndex!==null&&householdFood(h)>householdMembers(h).length*12)return '자립 가구';
+return '무토지 노동 가구'}
+function inequality(){const h=W.households.filter(x=>householdMembers(x).length),a=h.map(householdAssets).sort((a,b)=>a-b),sum=a.reduce((x,y)=>x+y,0);
+const g=a.length>0&&sum>0?a.reduce((total,x,i)=>total+(2*i+1-a.length)*x,0)/(a.length*sum):0;
+return {gini:Math.round(g*100)/100,landless:h.filter(x=>!W.fields.some(f=>f.ownerHouseholdId===x.id)).length,wealthy:h.filter(x=>householdClass(x)==='지주 농가').length,poor:h.filter(x=>householdFood(x)<householdMembers(x).length*9).length,households:h.length}}
+function updateMarketPrices(){const head=Math.max(1,people().length),reserve=W.food/head,p=clip(Math.round(3.2-reserve/130+(W.crisis?.active?1.4:0)),1,7);W.marketPrices={grain:p,fruit:Math.max(1,p+1),vegetables:Math.max(1,p),milk:Math.max(1,p+1),cheese:Math.max(2,p+3),fish:Math.max(1,p+1),meat:Math.max(2,p+2),honey:Math.max(2,p+2)};return W.marketPrices}
+function transferLand(from,to,feeKind,price){if(!from||!to||from.id===to.id)return false;const plot=W.fields.find(p=>p.ownerHouseholdId===from.id);if(!plot||W.fields.filter(p=>p.ownerHouseholdId===from.id).length<=1)return false;
+if(feeKind==='grain'){if((to.stores.grain||0)<price||houseCapacity(from)-householdFood(from)<price)return false;to.stores.grain-=price;from.stores.grain+=price}else if(feeKind==='coin'){if(to.coins<price)return false;to.coins-=price;from.coins+=price}else return false;
+plot.ownerHouseholdId=to.id;W.landSales=(W.landSales||0)+1;return true}
+function landMarket(){if(W.day%120!==0||W.stage===0)return;const list=W.households.filter(h=>householdMembers(h).some(n=>n.age>=18));const buyer=list.filter(h=>!W.fields.some(f=>f.ownerHouseholdId===h.id)).sort((a,b)=>householdAssets(b)-householdAssets(a));
+const seller=list.filter(h=>W.fields.filter(p=>p.ownerHouseholdId===h.id).length>=2).sort((a,b)=>householdFood(a)-householdFood(b));
+for(const b of buyer.slice(0,3)){const owner=seller.find(x=>x.id!==b.id&&householdFood(x)<householdMembers(x).length*22);if(!owner||!chance(.15))continue;
+const paid=W.stage===2&&b.coins>=65?transferLand(owner,b,'coin',65):transferLand(owner,b,'grain',88);
+if(paid){addEvent('무토지 가구가 모은 재산으로 농지 한 필지를 매입했다.','success');break}}
+}
 function household(id){return W.households?.find(h=>h.id===id)||null}
 function householdFor(n){return n?household(n.householdId):null}
 function householdMembers(h){return people().filter(n=>n.householdId===h.id)}
 function householdFood(h){return h?FOOD_TYPES.reduce((sum,k)=>sum+(h.stores[k]||0),0):0}
 function houseCapacity(h){return 100+householdMembers(h).length*75+(h.homeIndex!==null?140:0)}
 function initHouseholdEconomy(){
- ensureFamilies();ensureFields();W.households??=[];W.householdTrades??=0;W.householdAid??=0;W.householdMeals??=0;W.householdTaxes??=0;W.harvestWages??=0;W.sharecropContracts??=0;W.wageGrain??=0;W.hiringDays??=0;W.landReallocated??=0;W.propertyReversions??=0;W.houseReassigned??=0;W.householdBarters??=0;W.householdSales??=0;W.householdRents??=0;W.familyInheritance??=0;W.householdSpoilage??=0;W.householdPurchases??=0;W.cattleCommons??=W.cattle;
+ ensureFamilies();ensureFields();W.households??=[];W.householdTrades??=0;W.householdAid??=0;W.householdMeals??=0;W.landSales??=0;W.marketDeals??=0;W.marketSales??=0;W.householdTaxes??=0;W.harvestWages??=0;W.sharecropContracts??=0;W.wageGrain??=0;W.hiringDays??=0;W.landReallocated??=0;W.propertyReversions??=0;W.houseReassigned??=0;W.householdBarters??=0;W.householdSales??=0;W.householdRents??=0;W.familyInheritance??=0;W.householdSpoilage??=0;W.householdPurchases??=0;W.cattleCommons??=W.cattle;
  W.householdNextId=Math.max(W.householdNextId||0,...W.people.map(n=>n.householdId||0),...W.households.map(h=>h.id));
  for(const n of people()){if(!n.householdId)n.householdId=++W.householdNextId;let h=household(n.householdId);if(!h){h={id:n.householdId,founderId:n.id,stores:Object.fromEntries(FOOD_TYPES.map(k=>[k,0])),coins:0,homeIndex:null,cattleOwned:0,produced:0,consumed:0,aided:0,spent:0,received:0,plotsHarvested:0};W.households.push(h)}}
  for(const h of W.households){h.stores??={};for(const k of FOOD_TYPES)h.stores[k]??=0;h.coins??=0;h.homeIndex??=null;h.cattleOwned??=0;h.produced??=0;h.consumed??=0;h.aided??=0;h.received??=0;h.spent??=0;h.plotsHarvested??=0}
@@ -186,13 +206,29 @@ function settleHouseholds(){
  }
  // Commerce pays farming households from finite market coins for actual deliveries.
  if(W.stage===2&&W.day%30===0){
-   for(const h of homes.filter(h=>(h.stores.grain||0)>householdMembers(h).length*20)){
+   updateMarketPrices();for(const h of homes.filter(h=>(h.stores.grain||0)>householdMembers(h).length*20)){
      if(W.coin<4||W.food>people().length*130)break;
-     const qty=Math.min(16,Math.floor((h.stores.grain||0)-householdMembers(h).length*15),Math.floor(W.coin/2));if(qty<=1)continue;
-     h.stores.grain-=qty;W.products.grain+=qty;W.food+=qty;const price=qty*2;W.coin-=price;h.coins+=price;W.householdSales+=price;W.householdTrades++;
+     const qty=Math.min(16,Math.floor((h.stores.grain||0)-householdMembers(h).length*15),Math.floor(W.coin/(W.marketPrices?.grain||2)));if(qty<=1)continue;
+     h.stores.grain-=qty;W.products.grain+=qty;W.food+=qty;const price=qty*(W.marketPrices?.grain||2);if(W.coin<price)continue;W.coin-=price;h.coins+=price;W.householdSales+=price;W.householdTrades++;
    }
    for(const n of people().filter(n=>n.role==='merchant'&&n.gold>4)){const h=householdFor(n);if(h){const paid=Math.floor(n.gold*.25);n.gold-=paid;h.coins+=paid}}
  }
+ landMarket();
+ if(W.stage===2&&W.day%14===0){
+updateMarketPrices();let deals=0;
+for(const buyer of homes.filter(h=>h.coins>=2)){
+  if(deals>=8)break;
+  const members=householdMembers(buyer).length;
+  for(const kind of ['grain','vegetables','cheese','fish','milk','fruit','meat','honey']){
+    if((buyer.stores[kind]||0)>=members*4)continue;
+    const price=W.marketPrices[kind],seller=homes.find(h=>h.id!==buyer.id&&(h.stores[kind]||0)>householdMembers(h).length*6&&buyer.coins>=price*2);
+    if(!seller)continue;
+    const qty=Math.min(4,Math.floor(buyer.coins/price),Math.floor(seller.stores[kind]-householdMembers(seller).length*5),Math.floor(houseCapacity(buyer)-householdFood(buyer)));
+    if(qty<1||!transferHouseholdStock(seller,buyer,kind,qty,qty*price))continue;
+    W.householdSales+=qty*price;W.householdTrades++;W.marketDeals++;deals++;break
+  }
+}
+}
  if(W.stage>=1&&W.day%30===0){
   // Households without home ownership pay small food rent to another owner where possible.
   const owned=homes.filter(h=>h.homeIndex!==null);
@@ -279,8 +315,8 @@ function expandFarmland(){ensureFields();if(W.abandoned||W.day%90!==0||W.fields.
 function emergencyFoodWork(n,s){if(n.age<15||n.health<24||n.energy<22)return false;const pop=people().length;if(pop<1)return false;const shortage=W.food<pop*62,disaster=!!W.crisis?.active;if(!shortage&&!disaster)return false;if(!['labor','carpenter','merchant','miller','cheesemaker','advisor','beekeeper','guard'].includes(n.role))return false;if(!shortage&&W.food>pop*100)return false;if(n.role==='guard'&&count('guard')<=1&&W.food>pop*17)return false;n.energy=Math.max(0,n.energy-11);n.site='forest';n.action='비상 구근·나물 채집';const forestFactor=clip((W.forest-12)/88,0,.95),amount=Math.max(0,Math.round((s==='겨울'?1.7:3.1)*(.55+skill(n)/110)*forestFactor*(n.traits.curiosity>60?1.18:1)));if(amount>0){stockFood('vegetables',amount);W.emergencyHarvests=(W.emergencyHarvests||0)+amount;W.forest=clip(W.forest-.028*amount,12,100)}return true}
 function dailyStep(){if(W.abandoned){return}W.day++;initHouseholdEconomy();W.cropLast=0;W.foragedLast=0;W.dailyProduction={};progressCrops();manageHerd();crisisChange();handleAging();const s=season();for(const n of people()){n.site=chooseSite(n);if(n.age>=60&&n.energy<30&&chance(.65)){n.action='체력 회복·조언';n.energy=Math.min(cap(n),n.energy+22);if(n.role==='farmer')research('farm',n,.24);continue}if(emergencyFoodWork(n,s))continue;gatherOutputs(n,s)}
 if(W.food<W.foodCap*.8&&W.stage>=1&&W.food>people().length*70&&chance(.14))W.tech.trade.points+=.8;W.stageDays++;
-feedVillage();decayFood();if(W.day%3===0)socialConflict();if(W.day%12===0)jobMarket();if(W.day%45===0)familyStep();initHouseholdEconomy();if(W.day%90===0)expandFarmland();settleHouseholds();if(W.day%7===0){visitFriends();policyDecision();planBuilding()}if(W.day%14===0)rebellion();if(W.day%30===0)nextStage();maybeImmigration();checkExtinction();if(W.day%30===0)addEvent(`${date().year}년 ${date().month}월, 주민 ${people().length}명 · 비축 ${Math.round(W.food)}자루 · 농업 ${W.tech.farm.lvl}단계 · ${W.state||'존속'}.`);if(W.day%7===0)save()}
-function snapshot(){return {seed:W.seed,year:date().year,month:date().month,day:date().day,elapsed:W.day,pop:people().length,dead:W.dead,immigration:W.immigration,emigration:W.emigration,food:Math.round(W.food),births:W.births,marriages:W.marriages,familyMeals:W.familyMeals,inheritances:W.inheritances,landReallocated:W.landReallocated||0,householdInheritances:W.familyInheritance||0,propertyReversions:W.propertyReversions||0,houseReassigned:W.houseReassigned||0,children:people().filter(n=>n.role==='child').length,harvestWages:W.harvestWages||0,wageGrain:W.wageGrain||0,hiringDays:W.hiringDays||0,sharecropContracts:W.sharecropContracts||0,households:W.households?.length||0,privateFood:Math.round(W.households?.reduce((x,h)=>x+householdFood(h),0)||0),ownedHomes:W.households?.filter(h=>h.homeIndex!==null).length||0,householdBarters:W.householdBarters||0,householdAid:W.householdAid||0,householdSales:W.householdSales||0,apprentices:W.apprentices,careerChanges:W.careerChanges,harvests:W.harvests||0,failedHarvests:W.failedHarvests||0,grainProduced:W.fieldOutput||0,landCleared:W.landCleared||0,fields:W.fields?.map(p=>({id:p.id,state:p.state,soil:Math.round(p.soil),progress:Math.round(p.progress),lastYield:p.lastYield})),wood:Math.round(W.wood),stone:Math.round(W.stone),tools:Math.round(W.tools),stage:W.stage,tech:Object.fromEntries(Object.entries(W.tech).map(([k,v])=>[k,v.lvl])),buildings:{...W.buildings},grievance:Math.round(W.grievance),crimes:W.crimeCount,solvedCrimes:W.solvedCrimes,uprisings:W.uprisings,ruined:W.abandoned,crisis:W.crisis?.active||false,research:W.researchUnlocked,buildingCount:W.buildCompleted,policy:W.localPolicy,events:W.events.length}}
+feedVillage();decayFood();if(W.day%3===0)socialConflict();if(W.day%12===0)jobMarket();if(W.day%45===0)familyStep();initHouseholdEconomy();if(W.day%90===0)expandFarmland();if(W.day%14===0)updateMarketPrices();settleHouseholds();if(W.day%7===0){visitFriends();policyDecision();planBuilding()}if(W.day%14===0)rebellion();if(W.day%30===0)nextStage();maybeImmigration();checkExtinction();if(W.day%30===0)addEvent(`${date().year}년 ${date().month}월, 주민 ${people().length}명 · 비축 ${Math.round(W.food)}자루 · 농업 ${W.tech.farm.lvl}단계 · ${W.state||'존속'}.`);if(W.day%7===0)save()}
+function snapshot(){return {seed:W.seed,year:date().year,month:date().month,day:date().day,elapsed:W.day,pop:people().length,dead:W.dead,immigration:W.immigration,emigration:W.emigration,food:Math.round(W.food),births:W.births,marriages:W.marriages,familyMeals:W.familyMeals,inheritances:W.inheritances,landReallocated:W.landReallocated||0,householdInheritances:W.familyInheritance||0,propertyReversions:W.propertyReversions||0,houseReassigned:W.houseReassigned||0,children:people().filter(n=>n.role==='child').length,harvestWages:W.harvestWages||0,wageGrain:W.wageGrain||0,hiringDays:W.hiringDays||0,sharecropContracts:W.sharecropContracts||0,households:W.households?.length||0,privateFood:Math.round(W.households?.reduce((x,h)=>x+householdFood(h),0)||0),ownedHomes:W.households?.filter(h=>h.homeIndex!==null).length||0,householdBarters:W.householdBarters||0,householdAid:W.householdAid||0,householdSales:W.householdSales||0,marketDeals:W.marketDeals||0,landSales:W.landSales||0,gini:inequality().gini,landlessHouseholds:inequality().landless,apprentices:W.apprentices,careerChanges:W.careerChanges,harvests:W.harvests||0,failedHarvests:W.failedHarvests||0,grainProduced:W.fieldOutput||0,landCleared:W.landCleared||0,fields:W.fields?.map(p=>({id:p.id,state:p.state,soil:Math.round(p.soil),progress:Math.round(p.progress),lastYield:p.lastYield})),wood:Math.round(W.wood),stone:Math.round(W.stone),tools:Math.round(W.tools),stage:W.stage,tech:Object.fromEntries(Object.entries(W.tech).map(([k,v])=>[k,v.lvl])),buildings:{...W.buildings},grievance:Math.round(W.grievance),crimes:W.crimeCount,solvedCrimes:W.solvedCrimes,uprisings:W.uprisings,ruined:W.abandoned,crisis:W.crisis?.active||false,research:W.researchUnlocked,buildingCount:W.buildCompleted,policy:W.localPolicy,events:W.events.length}}
 function save(){try{localStorage.setItem('everworld_v23_households',JSON.stringify(W))}catch(e){}}
 function load(){try{const raw=JSON.parse(localStorage.getItem('everworld_v23_households')||'null');if(!raw||!raw.people||!raw.tech||raw.day<1)return false;W=raw;ensureProducts();ensureFields();ensureFamilies();initHouseholdEconomy();W.cattle??=4;W.fodder??=90;W.animalHealth??=85;W.pasture??=85;W.orchardTrees??=4;W.orchardHealth??=88;W.fishStock??=85;W.fishCap??=115;W.hives??=2;W.beeHealth??=85;W.tech.husbandry??={lvl:0,points:0};W.tech.orchard??={lvl:0,points:0};W.tech.preserve??={lvl:0,points:0};W.buildings.dairy??=1;W.buildings.cellar??=0;W.buildings.smokehouse??=0;selection=people()[0]?.id||null;return true}catch(e){return false}}
 // ---------------- presentation ----------------
