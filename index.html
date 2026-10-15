@@ -486,26 +486,38 @@ function initNeeds(n){
 }
 function needsScores(n){
  const x=initNeeds(n),h=householdFor(n),per=householdFood(h)/Math.max(1,h?householdMembers(h).length:1),social=friends(n).length;
- // Higher value = degree to which that level has been satisfied.
+ // These are game-design indices, not clinical or psychometric measurements.
  const physiological=clip(100-(x.hunger*.34+x.thirst*.23+x.sleep*.21+x.warmth*.10+x.hygiene*.06+(n.age>=18?x.intimacy*.06:0))-
  Math.max(0,x.hunger-65)*1.4-Math.max(0,x.thirst-70)*1.35-Math.max(0,x.sleep-75)*1.55,0,100);
  const safety=clip(100-x.safety*.8-(n.health<40?14:0)-(currentDebt(h)>20?11:0),0,100);
  const connection=clip(100-(x.belonging*.45+x.love*.55)+(social>1?5:0),0,100);
  const respect=clip(100-(x.esteem*.60+x.autonomy*.40),0,100);
  const fulfillment=clip(100-(x.growth*.55+x.meaning*.45),0,100);
- let tier=1;
- if(physiological>=66){tier=2;if(safety>=65){tier=3;if(connection>=63){tier=4;if(respect>=58)tier=5}}}
- if(n.maslowLevel!==tier){
- const before=n.maslowLevel;
+ let target=1;
+ if(physiological>=66){target=2;if(safety>=65){target=3;if(connection>=63){target=4;if(respect>=58)target=5}}}
+ n.maslowTarget=target;
+ let tier=n.maslowLevel??1;
+ if(n.lastMaslowAssessmentDay!==W.day){
+ n.lastMaslowAssessmentDay=W.day;
+ if(target>tier){n.maslowDeclineDays=0;n.maslowStableDays=(n.maslowStableDays||0)+1;
+ if(n.maslowStableDays>=12+tier*4){tier=Math.min(target,tier+1);n.maslowStableDays=0}}
+ else if(target<tier){
+ n.maslowStableDays=0;
+ const emergency=x.hunger>78||x.thirst>83||x.sleep>92||physiological<30;
+ if(emergency){tier=1;n.maslowDeclineDays=0}
+ else {n.maslowDeclineDays=(n.maslowDeclineDays||0)+1;if(n.maslowDeclineDays>=10){tier=Math.max(target,tier-1);n.maslowDeclineDays=0}}
+ }else{n.maslowDeclineDays=0;n.maslowStableDays=0}
+ }
+ const before=n.maslowLevel??1;
+ if(tier!==before){
  if(before>=2&&tier<before&&W.day>30)W.maslowRegressions=(W.maslowRegressions||0)+1;
  if(tier>before&&W.day>30)W.maslowTransitions=(W.maslowTransitions||0)+1;
  if(W.day>90&&W.day-(n.lastMaslowEventDay||-999)>180){
-   if(tier===5&&before<5){addEvent(n.name+'이 오랜 안정을 바탕으로 자신의 재능과 삶의 의미를 추구한다.','success');n.lastMaslowEventDay=W.day}
-   else if(tier===1&&before>=3&&n.hunger>55){addEvent(n.name+'이 생활 위기로 목표를 내려놓고 생존에 집중한다.','emergency');n.lastMaslowEventDay=W.day}
- }
-}
+ if(tier===5&&before<5){addEvent(n.name+'이 오랜 안정을 바탕으로 자신의 재능과 삶의 의미를 추구한다.','success');n.lastMaslowEventDay=W.day}
+ else if(tier===1&&before>=3&&n.hunger>55){addEvent(n.name+'이 생활 위기로 목표를 내려놓고 생존에 집중한다.','emergency');n.lastMaslowEventDay=W.day}
+ }}
  n.maslowLevel=tier;
- return {physiological,safety,connection,respect,fulfillment,tier,stockPerPerson:per};
+ return {physiological,safety,connection,respect,fulfillment,tier,target,stockPerPerson:per,stableDays:n.maslowStableDays||0};
 }
 function updateNeedsDaily(n,seasonName){
  const x=initNeeds(n);
@@ -816,13 +828,13 @@ const skills=document.createElement('div');skills.className='mind-traits';skills
 details.append(summary,reason,alt,memory,talents,motives,skills);el('profile').append(details);
  const needDetails=document.createElement('details');needDetails.className='needs-details';
  const ns=document.createElement('summary');const tierInfo=needsScores(n);
- ns.textContent=`매슬로 ${tierInfo.tier}단계 · ${MASLOW_NAMES[tierInfo.tier-1]} · 몸과 마음의 욕구 보기`;
+ ns.textContent=`매슬로 ${tierInfo.tier}단계 · ${MASLOW_NAMES[tierInfo.tier-1]} · 잠재적 목표 ${tierInfo.target}단계 · 욕구 보기`;
  needDetails.append(ns);
  const tierLabels=[['생리적 욕구',tierInfo.physiological],['안전 욕구',tierInfo.safety],['소속·사랑',tierInfo.connection],['존중 욕구',tierInfo.respect],['자아실현',tierInfo.fulfillment]];
  const state=document.createElement('div');state.className='needs-meta';state.textContent='단계별 충족도: '+tierLabels.map(([k,v])=>k+' '+Math.round(v)+'%').join(' · ');
  needDetails.append(state);
  const explanation=document.createElement('div');explanation.className='needs-meta';
- explanation.textContent='각 수치는 부족함(0=충족, 100=강한 욕구)을 뜻합니다. 위 단계도 열려 있지만, 아래 단계가 불안정하면 생존 행동의 우선순위가 높아집니다.';
+ explanation.textContent='수치는 결핍 정도(0=충족, 100=강한 욕구)입니다. 상위 단계는 일정 기간 안정된 생활 후 진입하며, 급격한 생존 위기에는 즉시 내려갈 수 있습니다. 5단계는 게임 속 유연한 동기 모형입니다.';
  needDetails.append(explanation);
  for(const [key,label] of Object.entries(NEED_LABELS)){if(key==='intimacy'&&n.age<18)continue;
  const line=document.createElement('div');line.className='needs-line';
