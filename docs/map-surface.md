@@ -36,3 +36,13 @@ Original-settlement residents now take short, bounded steps within their actual 
 Other settlements draw up to 64 visual representatives based on current population, homes, farms, schools and soldiers. They follow door-to-lane-to-work routes, work for a while, then return home. These are view-only actors rather than invented personal simulation records; selecting one opens aggregate population information. Visual actors are removed when population reaches zero, and other settlements remain animated after the original settlement is abandoned. Houses sit beside streets instead of directly on them.
 
 `node tests/resident-activity.cjs` checks workplace bounds, visible movement in all four neighboring villages, pause/resume, unchanged economy and random state, continued activity after the original settlement falls, and removal of ghost residents. It uses the Playwright setup described above.
+
+## Population and professions
+
+New worlds start with 64 individually simulated residents, including six children with actual parents, and 25 occupations. Four neighboring settlements start with 56, 72, 88 and 104 people. Homes, fields, supplies and initial territory scale with the larger population. Existing saves retain their population, identities and resources; the settings action “64명 시작” explicitly creates a fresh world.
+
+Eight added occupations perform actual model work: loggers harvest timber, quarriers produce stone, builders advance projects, smiths make existing tools, healers consume food to treat patients, teachers support research and child education, bakers convert grain into bread, and foresters restore woodland. Bread participates in food consumption, storage, spoilage and trade without adding calories during processing. New professions have workplace routes and map visuals using the existing embedded assets.
+
+The resident inspector's “직업” action opens a categorized roster with real counts. Career training uses the same livelihood, production and community categories. Leadership and childhood appear in the roster but are not ordinary training choices. Neighbor sprites continue to represent aggregate settlement activity, rather than fabricated individual records.
+
+Run `node tests/professions.cjs` with Playwright to verify starting scale, parents, actual profession output, food conservation, roster selection, career training and mobile input. Optionally set `EVERWORLD_LEGACY_HTML` to a previous index.html to verify that an old save's population, resources and identities survive loading.
