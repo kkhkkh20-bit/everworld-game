@@ -119,3 +119,8 @@ v2.4는 `everworld_v24_labor_market` 저장 키를 사용하며, 이전 버전�
 - v2.6의 저장 키는 `everworld_v26_clan_politics`이며, 이전 버전의 저장 데이터와 분리합니다.
 
 [25년 가문·정치 발전 자동 검증 기록](docs/v2.6-clan-governance-audit.md)
+
+
+## 지도 중심 화면
+
+고정 통계판 대신 전체 화면 지도에서 주민·건물·마을을 선택합니다. 지도 위에서 주민 따라가기·수련, 시설 확인, 마을 왕복과 교류, 시간 조작을 할 수 있습니다. [조작과 검증](docs/map-surface.md) · [오픈소스 그래픽·아이콘 라이선스](THIRD_PARTY_ASSETS.md)
