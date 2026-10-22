@@ -261,6 +261,7 @@ html,body{background:#739b66}#app{max-width:none;min-height:0;background:#739b66
 #mapInspect .inspect-close,#mapInspect .inspect-roster{width:44px;min-width:44px;height:44px;touch-action:manipulation}
 @media(max-width:620px){#mapInspect{right:76px!important;max-width:none}.inspect-top{gap:6px}.inspect-portrait{width:48px!important}#mapHud:has(#mapInspect:not([hidden])) .map-minimap{visibility:hidden}}
 @media(max-width:620px) and (max-height:500px){.map-resources,.map-minimap,.map-caption{display:none}#mapInspect{top:80px!important;bottom:164px;max-height:calc(100dvh - 244px);right:224px!important}#mapHud .map-zoom{display:flex;top:86px;bottom:auto;right:14px}}
+#mapHud .map-resources button{min-width:44px;min-height:44px;touch-action:manipulation}
 </style>
 </head>
 <body>
@@ -411,7 +412,7 @@ html,body{background:#739b66}#app{max-width:none;min-height:0;background:#739b66
   <path d="M12 17h.01" />
 </symbol></svg><div id="mapHud">
 <div class="map-brand"><button type="button" id="mapWorld" aria-label="문명 지도 / 마을로 돌아가기" title="문명 지도 / 마을로 돌아가기" class="brand-mark"><svg aria-hidden="true"><use href="#icon-compass"></use></svg></button><div><strong id="mapPlace">들녘마을</strong><small id="mapSubplace">LIVING WORLD</small></div></div>
-<div class="map-resources hud-glass" aria-label="관찰 상태"><span title="인구"><svg aria-hidden="true"><use href="#icon-users"></use></svg><b id="hudPop">18</b></span><span title="선택한 마을 식량 비축"><svg aria-hidden="true"><use href="#icon-wheat"></use></svg><b id="hudFood">—일</b></span><button type="button" id="hudWarButton" aria-label="전쟁 현황" style="background:transparent;padding:0"><span><svg aria-hidden="true"><use href="#icon-swords"></use></svg><b id="hudWar">0</b></span></button></div>
+<div class="map-resources hud-glass" aria-label="관찰 상태"><button type="button" id="hudPeopleButton" aria-label="주민 찾기" title="주민 찾기" style="background:transparent;padding:0"><span><svg aria-hidden="true"><use href="#icon-users"></use></svg><b id="hudPop">18</b></span></button><span title="선택한 마을 식량 비축"><svg aria-hidden="true"><use href="#icon-wheat"></use></svg><b id="hudFood">—일</b></span><button type="button" id="hudWarButton" aria-label="전쟁 현황" style="background:transparent;padding:0"><span><svg aria-hidden="true"><use href="#icon-swords"></use></svg><b id="hudWar">0</b></span></button></div>
 <div class="map-calendar hud-glass"><span class="season-orb"><svg aria-hidden="true"><use href="#icon-calendar-days"></use></svg></span><div><strong id="mapDate">1840. 01. 01</strong><small id="mapSeason">겨울</small></div></div>
 <div id="mapPins"></div><div id="mapInspect" hidden role="dialog" aria-label="선택한 대상"></div><div id="mapToast" class="map-toast" hidden role="status"></div>
 <div class="map-caption" id="mapCaption">들녘마을</div><div class="map-minimap hud-glass"><canvas id="mapMini" width="162" height="98" tabindex="0" role="button" aria-label="문명 지도 미니맵"></canvas><span class="minimap-label" id="mapMode">마을</span><span class="minimap-orient">N ↑</span></div>
@@ -1722,10 +1723,11 @@ function destinationFor(n){
 }
 function motionFor(n){
  if(motionWorld!==W){motionWorld=W;journeys.clear();motionClock=0}
+ if(!Number.isFinite(n.fx)||!Number.isFinite(n.fy)||(n.fx<=1&&n.fy<=1)||n.fx < -300||n.fx > 1300||n.fy < -300||n.fy > 1000){const d=destinationFor(n);n.fx=d.point[0];n.fy=d.point[1];journeys.delete(n.id)}
  let m=journeys.get(n.id);
  if(!m){
   const d=destinationFor(n);
-  if(!Number.isFinite(n.fx)||!Number.isFinite(n.fy)||(n.fx<=1&&n.fy<=1)){n.fx=d.point[0];n.fy=d.point[1]}
+
   m={...d,phase:'working',points:[],holdUntil:motionClock+3};journeys.set(n.id,m);
   if(Math.hypot(n.fx-d.point[0],n.fy-d.point[1])>18){m.phase='moving';m.points=routeTo(n,d)}
  }
@@ -1810,7 +1812,7 @@ function drawResidentAsset(c,n,x,y,size){
  const [col,row]=residentTile(n);c.imageSmoothingEnabled=false;c.drawImage(img,col*16,row*16,16,16,Math.round(x),Math.round(y),size,size);return true;
 }
 function pixelPerson(n,x,y){
- x=Math.round(x/2)*2;y=Math.round(y/2)*2;const m=motionFor(n),moving=m.phase==='moving',bob=moving&&Math.floor(visualTime/8+n.id)%2?1:0,size=n.age<15?24:32;
+ x=Math.round(x/2)*2;y=Math.round(y/2)*2;const m=motionFor(n),moving=m.phase==='moving',bob=moving&&Math.floor(visualTime/8+n.id)%2?1:0,size=(n.age<15?24:32)*(surface&&worldView==='village'?Math.max(1,Math.sqrt(.5/surface.camera.zoom)):1);
  ctx.fillStyle='#36573d38';ctx.beginPath();ctx.ellipse(x,y+12,size*.32,3,0,0,Math.PI*2);ctx.fill();
  if(!drawResidentAsset(ctx,n,x-size/2,y+13-size-bob,size)){rect(x-5,y-7,10,15,palette[n.role]||'#ad8d60');rect(x-4,y-16,8,9,'#d5aa7b')}
  if(n.role==='chief'){rect(x-5,y+14-size-bob,10,3,'#edc667');rect(x-5,y+11-size-bob,2,4,'#edc667');rect(x-1,y+10-size-bob,2,4,'#edc667');rect(x+3,y+11-size-bob,2,4,'#edc667')}
@@ -2110,7 +2112,7 @@ function drawSurfaceVillage(){
   for(let i=0;i<22;i++){surfaceTree(20+(i*37)%75,80+i*17,.8);if(i%2===0)surfaceTree(866+(i*19)%34,50+i*22,1)}
   drawRegionalResidents(v);
  }
- if(!v.pop||(id===0&&W.abandoned)){rect(-200,-100,1300,800,'#344d4266');mapLabel('폐허',450,275,'#f1c8a1')}
+ if(!v.pop||(id===0&&W.abandoned)){ rect(-200,-100,1300,800,'#344d4266');mapLabel(v.pop?'폐허 · 생존자 이탈':'폐허 · 주민 없음',450,275,'#f1c8a1');mapLabel('인구 표시를 눌러 멸망 기록 확인',450,302,'#fff0d0')}
  ctx.restore();drawSurfaceSelection();
 }
 function regionalHomePoint(i){return [177+(i%7)*92,[155,220,345,410][Math.floor(i/7)%4]]}
@@ -2139,7 +2141,7 @@ function advanceRegionalResidents(dt){
 }
 function drawRegionalResidents(v){
  const state=regionalResidents(v);if(!state)return;for(const a of [...state.agents].sort((a,b)=>a.y-b.y)){
-  const bob=!paused&&a.phase==='moving'&&Math.floor(state.clock*8+a.id)%2?1:0;ctx.fillStyle='#36573d38';ctx.beginPath();ctx.ellipse(a.x,a.y+10,8,3,0,0,Math.PI*2);ctx.fill();drawResidentAsset(ctx,a,a.x-14,a.y-18-bob,28);
+  const bob=!paused&&a.phase==='moving'&&Math.floor(state.clock*8+a.id)%2?1:0;ctx.fillStyle='#36573d38';ctx.beginPath();ctx.ellipse(a.x,a.y+10,8,3,0,0,Math.PI*2);ctx.fill();const size=28*Math.max(1,Math.sqrt(.5/surface.camera.zoom));if(!drawResidentAsset(ctx,a,a.x-size/2,a.y+10-size-bob,size)){rect(a.x-4,a.y-12,8,15,palette[a.role]||'#ad8d60');rect(a.x-3,a.y-18,6,6,'#d5aa7b')}
   if(a.phase==='working'&&a.role==='farmer'&&surface.atlas?.naturalWidth){ctx.save();ctx.translate(a.x+10,a.y);ctx.rotate(paused?0:Math.sin(state.clock*5+a.id)*.35);ctx.drawImage(surface.atlas,8*16,9*16,16,16,-4,-8,12,12);ctx.restore()}
  }
 }
@@ -2161,7 +2163,24 @@ function surfaceButton(icon,label,handler,primary=false){const b=document.create
 function surfaceToast(message){el('mapToast').textContent=message;el('mapToast').hidden=false;clearTimeout(surface.toastTimer);surface.toastTimer=setTimeout(()=>el('mapToast').hidden=true,3500)}
 function closeSurfaceInspector(){surface.roleFilter=null;surface.selection=null;surface.follow=null;surface.family=null;el('mapInspect').hidden=true;el('app').classList.remove('detail-open');updateSurfacePins();}
 function openSurfaceWorld(){surface.selection=null;surface.follow=null;worldView='region';el('app').dataset.view='region';el('mapInspect').hidden=true;el('app').classList.remove('detail-open');fitSurfaceWorld();surfaceToast('마을을 눌러 들어가세요');updateSurfaceHUD();updateSurfacePins();drawWorld()}
-function openSurfaceVillage(id){observedSettlementId=id;regionSelection=id;worldView='village';el('app').dataset.view='village';surface.camera={x:id===0?480:450,y:285,zoom:1};surface.follow=null;surface.selection=null;el('mapInspect').hidden=true;el('app').classList.remove('detail-open');updateSurfaceHUD();updateSurfacePins();drawWorld();surfaceToast(regionVillage(id).name)}
+function openSurfaceVillage(id){observedSettlementId=id;regionSelection=id;worldView='village';el('app').dataset.view='village';fitSurfaceVillage();surface.follow=null;surface.selection=null;el('mapInspect').hidden=true;el('app').classList.remove('detail-open');updateSurfaceHUD();updateSurfacePins();drawWorld();surfaceToast(regionVillage(id).name)}
+function fitSurfaceVillage(){
+ const b=canvas.getBoundingClientRect();if(!b.width||!b.height)return;
+ const scale=Math.max(b.width/900,b.height/570),top=b.height<=500?80:b.width<=620?140:110,bottom=b.width<=1100?164:100;
+ const left=18,right=b.width<=620?76:82,availableW=Math.max(100,b.width-left-right),availableH=Math.max(80,b.height-top-bottom);
+ const residents=observedSettlementId===0?people():regionalResidents(regionVillage(observedSettlementId))?.agents||[];
+ if(observedSettlementId===0)for(const n of residents)motionFor(n);
+ const xs=residents.map(n=>n.fx??n.x).filter(Number.isFinite),ys=residents.map(n=>n.fy??n.y).filter(Number.isFinite);
+ const minX=Math.min(0,...xs)-24,maxX=Math.max(900,...xs)+24,minY=Math.min(45,...ys)-32,maxY=Math.max(510,...ys)+24;
+ const zoom=clip(Math.min(availableW/scale/(maxX-minX),availableH/scale/(maxY-minY)),.12,1.2);
+ surface.camera={x:(minX+maxX)/2-(left+availableW/2-b.width/2)/scale/zoom,y:(minY+maxY)/2-(top+availableH/2-b.height/2)/scale/zoom,zoom};surface.autoFit=true;
+}
+function findSurfaceResident(){
+ if(worldView==='region')openSurfaceVillage(regionSelection);
+ if(observedSettlementId!==0){showSurfaceInspect('population',observedSettlementId);return}
+ const live=people();if(!live.length){showSurfaceInspect('settlement',0);surfaceToast('현재 주민이 없습니다 · 마을 상태와 멸망 기록을 확인하세요');return}
+ surface.personIndex=((surface.personIndex??-1)+1)%live.length;selectSurfacePerson(live[surface.personIndex]);
+}
 function fitSurfaceWorld(){fitWorldCamera();const b=canvas.getBoundingClientRect(),visibleWidth=Math.min(900,570*b.width/Math.max(1,b.height));worldCamera.zoom=clip(worldCamera.zoom*Math.min(1,visibleWidth/700),.3,2);}
 function refreshSurfaceTimeControls(){
  if(!surface)return;const running=!!skipTask,label=running?'시간 계산 중':!worldCanAdvance()?'모든 마을 소멸':paused?'일시정지':speed+'배속';el('mapClockState').textContent=label;
@@ -2246,7 +2265,7 @@ function renderSurfaceInspector(){const s=surface.selection;if(!s)return;const t
 }
 function showSurfaceHistory(id){showSurfaceInspect('history',id)}
 function showSurfaceTraining(id){showSurfaceInspect('training',id)}
-function selectSurfacePerson(n){if(!n){surfaceToast('해당 일을 하는 주민이 없습니다');return}selection=n.id;surface.camera.x=n.fx;surface.camera.y=n.fy;showSurfaceInspect('person',n.id,n.fx,n.fy)}
+function selectSurfacePerson(n){if(!n){surfaceToast('해당 일을 하는 주민이 없습니다');return}if(worldView!=='village'||observedSettlementId!==0)openSurfaceVillage(0);selection=n.id;surface.autoFit=false;surface.camera.zoom=Math.max(.9,surface.camera.zoom);surface.camera.x=n.fx;surface.camera.y=n.fy;showSurfaceInspect('person',n.id,n.fx,n.fy)}
 function focusSurfaceRole(role){if(observedSettlementId!==0){surfaceToast('이웃 마을은 현재 인구·시설 단위로 관찰합니다');return}const group=people().filter(n=>n.role===role);selectSurfacePerson(group[0]||people()[0])}
 function updateSurfacePins(){if(!surface)return;const root=el('mapPins');const items=worldView==='region'?[regionVillage(0),...ensureWorld().villages].map(v=>({type:'settlement',key:v.id,x:v.tx*12+6,y:v.ty*12-15,label:v.name,icon:v.pop?'flag':'history'})):(surface.nodes||[]).filter(n=>['hall','granary','workshop','forest','river','settlement','clinic','school','quarry'].includes(n.type));const signature=worldView+':'+observedSettlementId+':'+items.map(n=>n.type+':'+n.key+':'+n.label+':'+n.icon).join('|');if(surface.pinSignature===signature){surface.pins.forEach((pin,i)=>{pin.node=items[i];pin.button.onclick=()=>{const n=pin.node;showSurfaceInspect(n.type,n.key,n.x,n.y)}});positionSurfacePins();return}if(surface.uiPresses?.size){positionSurfacePins();return}surface.pinSignature=signature;root.replaceChildren();surface.pins=[];for(const n of items){const b=document.createElement('button');b.type='button';b.className=worldView==='region'?'pin-settlement':'pin-local';b.setAttribute('aria-label',n.label);b.title=n.label;b.innerHTML=surfaceIcon(n.icon)+(worldView==='region'?'<span>'+n.label+'</span>':'');b.onclick=()=>showSurfaceInspect(n.type,n.key,n.x,n.y);root.append(b);surface.pins.push({node:n,button:b})}positionSurfacePins()}
 function positionSurfacePins(){if(!surface)return;for(const {node:n,button:b}of surface.pins){b.classList.toggle('selected',surface.selection?.type===n.type&&surface.selection.key===n.key);const point=worldView==='region'?[450+(n.x-worldCamera.x)*worldCamera.zoom,285+(n.y-worldCamera.y)*worldCamera.zoom]:localToScreen(n.x,n.y-47);const [x,y]=mapViewPoint(...point),bounds=canvas.getBoundingClientRect();b.style.left=x+'px';b.style.top=y+'px';b.hidden=x<15||x>bounds.width-15||y<110||y>bounds.height-100;}if(surface.selection&&!el('mapInspect').hidden)positionSurfaceInspector()}
@@ -2260,18 +2279,18 @@ function initMapSurface(){
  surface={uiPresses:new Set(),pointers:new Map(),camera:{x:480,y:285,zoom:1},nodes:[],pins:[],selection:null,territories:true,follow:null,family:null,lastMini:0,drag:null,dragged:false};
  if(typeof Image!=='undefined'){surface.atlas=new Image();surface.atlas.onload=()=>{surface.regionArt=null;drawWorld();updateSurfacePins()};surface.atlas.src=TINY_TOWN_ATLAS;surface.residents=new Image();surface.residents.onload=()=>{drawWorld();if(surface.selection&&!el('mapInspect').hidden)renderSurfaceInspector();if(tab==='people')renderPeople()};surface.residents.src=TINY_DUNGEON_ATLAS;}
  document.addEventListener('pointerdown',ev=>{if(ev.target?.closest?.('#mapInspect,#mapPins'))surface.uiPresses.add(ev.pointerId)},true);const release=ev=>{setTimeout(()=>surface.uiPresses.delete(ev.pointerId),0)};document.addEventListener('pointerup',release,true);document.addEventListener('pointercancel',release,true);document.addEventListener('keydown',ev=>{if(ev.target?.closest?.('#mapInspect button')&&(ev.key===' '||ev.key==='Enter'))surface.keyHeld=true},true);document.addEventListener('keyup',()=>setTimeout(()=>surface.keyHeld=false,0),true);el('skipStop').onclick=()=>{if(skipTask)skipTask.cancelled=true};
- el('mapWorld').onclick=()=>worldView==='region'?openSurfaceVillage(regionSelection):openSurfaceWorld();el('dockWorld').onclick=openSurfaceWorld;el('dockPeople').onclick=()=>{if(worldView==='region')openSurfaceVillage(regionSelection);if(observedSettlementId!==0){showSurfaceInspect('population',observedSettlementId);return}const p=people();surface.personIndex=((surface.personIndex??-1)+1)%Math.max(1,p.length);selectSurfacePerson(p[surface.personIndex])};el('dockTerritory').onclick=()=>{surface.territories=!surface.territories;if(worldView!=='region')openSurfaceWorld();updateSurfaceHUD()};el('dockHistory').onclick=()=>showSurfaceHistory(worldView==='region'?regionSelection:observedSettlementId);el('dockSettings').onclick=()=>showSurfaceInspect('settings',0);el('hudWarButton').onclick=()=>showSurfaceInspect('war',0);el('mapHelp').onclick=()=>showSurfaceInspect('help',0);el('mapPause').onclick=()=>{if(skipTask){surfaceToast('시간 건너뛰기는 오른쪽 건너뛰기 버튼으로 중단하세요');return}paused=!paused;updateSurfaceHUD()};for(const b of document.querySelectorAll('[data-map-speed]'))b.onclick=()=>{if(skipTask)return;setSpeed(Number(b.dataset.mapSpeed));updateSurfaceHUD();surfaceToast(b.dataset.mapSpeed+'배속으로 진행합니다')};el('mapSkip').onclick=()=>{if(skipTask){skipTask.cancelled=true;surfaceToast('시간 건너뛰기를 중단합니다')}else showSurfaceInspect('time',0)};
- function zoom(factor){if(worldView==='region')worldCamera.zoom=clip(worldCamera.zoom*factor,.25,4);else surface.camera.zoom=clip(surface.camera.zoom*factor,.5,2.5);drawWorld()}
- el('mapZoomIn').onclick=()=>zoom(1.25);el('mapZoomOut').onclick=()=>zoom(.8);el('mapFit').onclick=()=>{if(worldView==='region')fitSurfaceWorld();else surface.camera={x:450,y:285,zoom:.85};surface.follow=null;drawWorld()};
+ el('mapWorld').onclick=()=>worldView==='region'?openSurfaceVillage(regionSelection):openSurfaceWorld();el('dockWorld').onclick=openSurfaceWorld;el('dockPeople').onclick=findSurfaceResident;el('hudPeopleButton').onclick=findSurfaceResident;el('dockTerritory').onclick=()=>{surface.territories=!surface.territories;if(worldView!=='region')openSurfaceWorld();updateSurfaceHUD()};el('dockHistory').onclick=()=>showSurfaceHistory(worldView==='region'?regionSelection:observedSettlementId);el('dockSettings').onclick=()=>showSurfaceInspect('settings',0);el('hudWarButton').onclick=()=>showSurfaceInspect('war',0);el('mapHelp').onclick=()=>showSurfaceInspect('help',0);el('mapPause').onclick=()=>{if(skipTask){surfaceToast('시간 건너뛰기는 오른쪽 건너뛰기 버튼으로 중단하세요');return}paused=!paused;updateSurfaceHUD()};for(const b of document.querySelectorAll('[data-map-speed]'))b.onclick=()=>{if(skipTask)return;setSpeed(Number(b.dataset.mapSpeed));updateSurfaceHUD();surfaceToast(b.dataset.mapSpeed+'배속으로 진행합니다')};el('mapSkip').onclick=()=>{if(skipTask){skipTask.cancelled=true;surfaceToast('시간 건너뛰기를 중단합니다')}else showSurfaceInspect('time',0)};
+ function zoom(factor){if(worldView==='region')worldCamera.zoom=clip(worldCamera.zoom*factor,.25,4);else{surface.autoFit=false;surface.camera.zoom=clip(surface.camera.zoom*factor,.12,2.5)};drawWorld()}
+ el('mapZoomIn').onclick=()=>zoom(1.25);el('mapZoomOut').onclick=()=>zoom(.8);el('mapFit').onclick=()=>{if(worldView==='region')fitSurfaceWorld();else fitSurfaceVillage();surface.follow=null;drawWorld()};
  el('mapMini').onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();openSurfaceWorld()}};el('mapMini').onclick=ev=>{if(worldView!=='region'){openSurfaceWorld();return}const b=el('mapMini').getBoundingClientRect(),m=surface.miniBounds;if(m){worldCamera.x=(m.minX+(ev.clientX-b.left)/b.width*(m.maxX-m.minX))*12;worldCamera.y=(m.minY+(ev.clientY-b.top)/b.height*(m.maxY-m.minY))*12;drawWorld()}};
- canvas.addEventListener('pointerdown',ev=>{const [x,y]=logicalCanvasPoint(ev),cam=worldView==='region'?worldCamera:surface.camera;surface.pointers.set(ev.pointerId,[x,y]);if(surface.pointers.size===2){const [a,b]=[...surface.pointers.values()],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;surface.pinch={distance:Math.hypot(a[0]-b[0],a[1]-b[1]),zoom:cam.zoom,wx:(mx-450)/cam.zoom+cam.x,wy:(my-285)/cam.zoom+cam.y};surface.drag=null;surface.dragged=true}else{surface.drag={id:ev.pointerId,x,y,cx:cam.x,cy:cam.y};surface.dragged=false}surface.follow=null;canvas.setPointerCapture(ev.pointerId)});
- canvas.addEventListener('pointermove',ev=>{if(!surface.pointers.has(ev.pointerId))return;const pt=logicalCanvasPoint(ev);surface.pointers.set(ev.pointerId,pt);if(surface.pointers.size>=2&&surface.pinch){const [a,b]=[...surface.pointers.values()],cam=worldView==='region'?worldCamera:surface.camera,p=surface.pinch;cam.zoom=clip(p.zoom*Math.hypot(a[0]-b[0],a[1]-b[1])/Math.max(1,p.distance),worldView==='region'?.25:.5,worldView==='region'?4:2.5);cam.x=p.wx-((a[0]+b[0])/2-450)/cam.zoom;cam.y=p.wy-((a[1]+b[1])/2-285)/cam.zoom;surface.dragged=true;drawWorld();return}if(!surface.drag||surface.drag.id!==ev.pointerId)return;const [x,y]=pt,dx=x-surface.drag.x,dy=y-surface.drag.y,cam=worldView==='region'?worldCamera:surface.camera;if(Math.hypot(dx,dy)>5)surface.dragged=true;if(surface.dragged){cam.x=surface.drag.cx-dx/cam.zoom;cam.y=surface.drag.cy-dy/cam.zoom;drawWorld()}});canvas.addEventListener('pointerup',ev=>{surface.pointers.delete(ev.pointerId);surface.drag=null;if(!surface.pointers.size)surface.pinch=null});canvas.addEventListener('pointercancel',ev=>{surface.pointers.delete(ev.pointerId);surface.drag=null;surface.pinch=null;surface.dragged=false});
- canvas.addEventListener('wheel',ev=>{ev.preventDefault();const [x,y]=logicalCanvasPoint(ev),cam=worldView==='region'?worldCamera:surface.camera,wx=(x-450)/cam.zoom+cam.x,wy=(y-285)/cam.zoom+cam.y;cam.zoom=clip(cam.zoom*(ev.deltaY<0?1.12:1/1.12),worldView==='region'?.25:.5,worldView==='region'?4:2.5);cam.x=wx-(x-450)/cam.zoom;cam.y=wy-(y-285)/cam.zoom;drawWorld()},{passive:false});
+ canvas.addEventListener('pointerdown',ev=>{const [x,y]=logicalCanvasPoint(ev),cam=worldView==='region'?worldCamera:surface.camera;surface.pointers.set(ev.pointerId,[x,y]);if(surface.pointers.size===2){const [a,b]=[...surface.pointers.values()],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;surface.pinch={distance:Math.hypot(a[0]-b[0],a[1]-b[1]),zoom:cam.zoom,wx:(mx-450)/cam.zoom+cam.x,wy:(my-285)/cam.zoom+cam.y};surface.drag=null;surface.dragged=true}else{surface.drag={id:ev.pointerId,x,y,cx:cam.x,cy:cam.y};surface.dragged=false}surface.follow=null;surface.autoFit=false;canvas.setPointerCapture(ev.pointerId)});
+ canvas.addEventListener('pointermove',ev=>{if(!surface.pointers.has(ev.pointerId))return;const pt=logicalCanvasPoint(ev);surface.pointers.set(ev.pointerId,pt);if(surface.pointers.size>=2&&surface.pinch){const [a,b]=[...surface.pointers.values()],cam=worldView==='region'?worldCamera:surface.camera,p=surface.pinch;cam.zoom=clip(p.zoom*Math.hypot(a[0]-b[0],a[1]-b[1])/Math.max(1,p.distance),worldView==='region'?.25:.12,worldView==='region'?4:2.5);cam.x=p.wx-((a[0]+b[0])/2-450)/cam.zoom;cam.y=p.wy-((a[1]+b[1])/2-285)/cam.zoom;surface.dragged=true;drawWorld();return}if(!surface.drag||surface.drag.id!==ev.pointerId)return;const [x,y]=pt,dx=x-surface.drag.x,dy=y-surface.drag.y,cam=worldView==='region'?worldCamera:surface.camera;if(Math.hypot(dx,dy)>5)surface.dragged=true;if(surface.dragged){cam.x=surface.drag.cx-dx/cam.zoom;cam.y=surface.drag.cy-dy/cam.zoom;drawWorld()}});canvas.addEventListener('pointerup',ev=>{surface.pointers.delete(ev.pointerId);surface.drag=null;if(!surface.pointers.size)surface.pinch=null});canvas.addEventListener('pointercancel',ev=>{surface.pointers.delete(ev.pointerId);surface.drag=null;surface.pinch=null;surface.dragged=false});
+ canvas.addEventListener('wheel',ev=>{ev.preventDefault();surface.autoFit=false;const [x,y]=logicalCanvasPoint(ev),cam=worldView==='region'?worldCamera:surface.camera,wx=(x-450)/cam.zoom+cam.x,wy=(y-285)/cam.zoom+cam.y;cam.zoom=clip(cam.zoom*(ev.deltaY<0?1.12:1/1.12),worldView==='region'?.25:.12,worldView==='region'?4:2.5);cam.x=wx-(x-450)/cam.zoom;cam.y=wy-(y-285)/cam.zoom;drawWorld()},{passive:false});
  document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){closeSurfaceInspector();return}if(ev.target?.closest?.('button,select,input,textarea,[role=button]'))return;if(ev.code==='Space'){ev.preventDefault();if(skipTask)return;paused=!paused;updateSurfaceHUD()}else if(ev.key==='m'||ev.key==='M')el('mapWorld').onclick();else if(ev.key==='+'||ev.key==='=')zoom(1.25);else if(ev.key==='-')zoom(.8)});
  el('closeCard').onclick=()=>{el('app').classList.remove('detail-open');el('app').classList.remove('card-opened')};
 }
 
-initMapSurface();if(!load())generate((Date.now()>>>0)^123127);observeSettlements();worldView='village';observedSettlementId=0;regionSelection=0;el('app').dataset.view='village';render();updateSurfacePins();setSpeed(1);requestAnimationFrame(frame);window.addEventListener('pagehide',save);window.addEventListener('resize',render);
+initMapSurface();if(!load())generate((Date.now()>>>0)^123127);observeSettlements();worldView='village';observedSettlementId=0;regionSelection=0;el('app').dataset.view='village';fitSurfaceVillage();render();updateSurfacePins();setSpeed(1);requestAnimationFrame(frame);window.addEventListener('pagehide',save);window.addEventListener('resize',()=>{if(worldView==='village'&&surface.autoFit)fitSurfaceVillage();render()});
 window.__EVERWORLD__={step(n=1){for(let i=0;i<n&&worldCanAdvance();i++)dailyStep();render();return snapshot()},snapshot,reset(seed=1840){generate(seed);return snapshot()},world:()=>W,pause(){paused=true},run(){paused=false},calendar:date};
 })();
 </script></body></html>

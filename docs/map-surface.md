@@ -52,3 +52,11 @@ Run `node tests/professions.cjs` with Playwright to verify starting scale, paren
 The inspector now reserves the right-side map-control rail instead of covering zoom, fit and help controls. Narrow landscape layouts reserve separate space for the card, rail, clock and dock; redundant resource/minimap overlays are hidden there. Close and occupation controls use 44 px touch targets. Hidden map pins explicitly use display:none so the authored flex style cannot resurrect off-screen controls.
 
 `node tests/button-reachability.cjs` checks all persistent clock, dock and map-control hit targets with six inspector types at six viewport sizes, then uses real touch to zoom, open help, close cards, skip 30 days and select a career after scrolling. The existing time-controls audit separately checks 24x, pause, long-skip cancellation and exact calendar advancement.
+
+## Resident visibility and village framing
+
+Village entry, initial loading and map-fit now calculate the camera from the actual viewport, reserved HUD space and resident positions. Portrait phones previously cropped the sides of the fixed-width map, hiding fields and forest workers. Overview zoom can go below 0.5; resident sprites receive a modest size correction at low zoom. Selecting a person restores at least 0.9 zoom. Resize refits an overview, while manual pan/zoom and person selection retain their camera intent.
+
+The population indicator and resident dock locate actual people. Empty original settlements open their status and extinction history instead of silently doing nothing. Invalid or implausibly out-of-map saved display coordinates are repaired to the actual destination without adding people or altering resources. Neighbor actors also have an asset-loading fallback.
+
+`node tests/resident-visibility.cjs` checks that all residents or aggregate representatives fit on screen in all five villages across five viewport sizes, that touch selection zooms to a real person, that map-fit is restored, and that extinct villages explain their history without fabricating population. It also checks coordinate repair leaves resources, population and RNG unchanged.
