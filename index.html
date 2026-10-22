@@ -180,13 +180,21 @@ main{position:relative;grid-template-columns:minmax(0,1fr) 350px}
 
 @media(max-width:760px) and (max-height:620px){.side{position:fixed;top:0;bottom:47px}.portrait-stage{height:73px}.card-body{padding:4px 8px}.card-goal{margin-top:4px}}
 .action-card .motion-activity{display:block;color:#c9cfb1;font-size:10px;line-height:1.4;margin-top:4px}.action-card b{font-size:10px}
+
+#speedMenu{display:none}
+#skipProgress{position:absolute;bottom:12px;left:12px;z-index:6;padding:10px 14px;max-width:calc(100% - 24px);background:#172b28f5;color:#efdcaa;border:1px solid #bd9e62;border-radius:7px;box-shadow:0 3px 15px #0006;font-size:11px}
+#skipProgress[hidden]{display:none}
+#skipProgress progress{display:block;width:100%;height:5px;margin-top:7px;accent-color:#d8b66d}
+#skipProgress progress[hidden]{display:none}
+.ctl:disabled{opacity:.5;cursor:wait}
+@media(max-width:760px){footer [data-speed]{display:none}#speedMenu{display:block}footer .ctl{padding:7px 6px;font-size:10px}#skip{font-size:10px}#skipPeriod{max-width:65px}}
 </style>
 </head>
 <body>
 <div id="app">
 <header><div><h1>살아있는 왕국 <span style="color:#dbc38e;font-size:11px">v2.8 · 픽셀 마을</span></h1><small>자급 · 수확 · 기술 · 건설 · 정치 — 주민들이 스스로 살아간다</small></div><div class="time"><span id="date">왕국력 1840년</span><small id="era">자급 생활기</small></div></header>
 <section class="kpis"><div class="kpi"><label>주민</label><b id="pop">15명</b></div><div class="kpi"><label>공동 식량</label><b id="food">—</b></div><div class="kpi"><label>공동 비축일</label><b id="daysFood">—일</b></div><div class="kpi"><label>목재 / 석재</label><b id="materials">—</b></div><div class="kpi"><label>불만</label><b id="unrest">—</b></div><div class="kpi"><label>마을 상태</label><b id="status">—</b></div></section>
-<main><section class="world"><button class="card-open" id="showCard" type="button">주민 카드 ♧</button><canvas id="world" aria-label="농사와 수렵채집을 하는 주민들의 자동 시뮬레이션 마을"></canvas><div class="scene-head"><span id="season">겨울</span><span id="fieldInfo">논밭</span><span id="stage">자급 공동체</span></div><div class="recent-events"><button id="openChronicle" type="button">최근 소식 · 연대기 열기 ↗</button><ol id="recentEvents"></ol></div><div class="legend"><span id="visibleWorkers">농업</span><span id="visibleForagers">채집</span><span id="projectLine">건설 대기</span></div></section>
+<main><div id="skipProgress" hidden role="status" aria-live="polite"><span id="skipMessage"></span><progress id="skipMeter" max="1" value="0" aria-label="시간 건너뛰기 진행률"></progress></div><section class="world"><button class="card-open" id="showCard" type="button">주민 카드 ♧</button><canvas id="world" aria-label="농사와 수렵채집을 하는 주민들의 자동 시뮬레이션 마을"></canvas><div class="scene-head"><span id="season">겨울</span><span id="fieldInfo">논밭</span><span id="stage">자급 공동체</span></div><div class="recent-events"><button id="openChronicle" type="button">최근 소식 · 연대기 열기 ↗</button><ol id="recentEvents"></ol></div><div class="legend"><span id="visibleWorkers">농업</span><span id="visibleForagers">채집</span><span id="projectLine">건설 대기</span></div></section>
 <aside class="side" aria-label="주민과 마을 정보"><button class="card-close" id="closeCard" type="button">마을로 돌아가기 ×</button><div class="tabs"><button id="tab-people" class="active">주민</button><button id="tab-news">역사</button><button id="tab-economy">생산·시설</button><button id="tab-families">가구·재산</button><button id="tab-politics">가문·정치</button><button id="tab-laws">관습법</button></div>
 <div class="panel" id="peoplePanel"><div class="summary" id="leaderSummary">성주와 주민들이 생존을 준비하고 있습니다.</div><div class="summary need-village-stats" id="needVillageStats">욕구 변화 관찰 중</div><details class="roster" id="residentRoster"><summary>주민 목록에서 선택</summary><div class="rows" id="peopleList"></div><div class="pager"><button id="prev">이전</button><span id="page">1 / 3</span><button id="next">다음</button></div></details><div class="profile" id="profile"><strong>주민을 선택하세요</strong><small>직업, 성격, 나이와 선택 행동이 표시됩니다.</small></div></div>
 <div class="panel" id="newsPanel" hidden><h2>왕국 연대기</h2><div class="events" id="news"></div><div class="summary" id="newsSummary"></div></div>
@@ -195,7 +203,7 @@ main{position:relative;grid-template-columns:minmax(0,1fr) 350px}
 <div class="panel" id="politicsPanel" hidden><h2>가문과 정치 발전</h2><div class="summary" id="governmentInfo"></div><div class="family-list" id="clanList" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div><div class="helptext">초기에는 촌장부터 시작합니다. 자산·가문 세력·주민 신뢰와 여러 취락의 발전에 따라 평의회, 세습제, 연합 체제로 분기합니다. 백작·왕권은 필연적인 발전 단계가 아닙니다.</div></div>
 <div class="panel" id="lawsPanel" hidden><h2>초기 공동체 관습법</h2><div class="summary">정식 법원이나 화폐 벌금은 없습니다. 생존을 방해하는 행위를 성주와 경비병이 관습으로 다스립니다.</div><div class="facilities"><div class="facility"><b>식량 절도</b><small>발견되면 원물 배상 · 관계 악화</small></div><div class="facility"><b>위협과 폭력</b><small>관습상 금지 · 경비병 개입 가능</small></div><div class="facility"><b>농민 봉기</b><small>기근·과세 갈등 때 성주와 협상 또는 충돌</small></div><div class="facility"><b>직업과 신분</b><small>낮은 신분 자체는 범죄가 아님</small></div><div class="facility"><b>토지·가옥 소유</b><small>관습에 따라 가구가 소유·상속. 상속인이 없으면 공동체 귀속</small></div><div class="facility"><b>가구 간 물물교환</b><small>양쪽 모두 가진 식량만 교환 가능. 허위 거래 시 기존 절도·위협 관습 적용</small></div><div class="facility"><b>채무와 임금계약</b><small>갚지 못한 빚은 자동으로 형사범죄가 되지 않음. 대출 연장·노동상환·중재 가능. 반복 연체는 신용과 관계 악화</small></div><div class="facility"><b>임금 체불</b><small>고용주가 지급하지 못한 곡물 임금은 기록되며, 반복되면 계약 파기 및 공동체 불만 증가</small></div></div><div class="summary" id="lawStats">사건 집계</div><div class="helptext">문명이 성장하면 법률과 재판 제도도 발전하도록 확장할 계획입니다. 현재는 신고와 원물 배상을 중심으로 구현되어 있습니다.</div></div>
 </aside></main>
-<footer><button class="ctl active" id="pause">일시정지</button><button class="ctl" data-speed="1">1배속</button><button class="ctl" data-speed="6">6배속</button><button class="ctl" data-speed="24">24배속</button><button class="ctl" id="skip">+30일</button><span class="grow"></span><span class="foot-note">모든 주민은 자동 행동</span><button class="ctl" id="reset">새 왕국</button></footer>
+<footer><button class="ctl active" id="pause">일시정지</button><button class="ctl" data-speed="1">1배속</button><button class="ctl" data-speed="6">6배속</button><button class="ctl" data-speed="24">24배속</button><select class="ctl" id="speedMenu" aria-label="진행 속도"><option value="1">1배속</option><option value="6">6배속</option><option value="24">24배속</option></select><select class="ctl" id="skipPeriod" aria-label="건너뛸 기간"><option value="days:30">30일</option><option value="years:1">1년</option><option value="years:10">10년</option><option value="years:100">100년</option></select><button class="ctl" id="skip">건너뛰기</button><span class="grow"></span><span class="foot-note">모든 주민은 자동 행동</span><button class="ctl" id="reset">새 왕국</button></footer>
 </div>
 <script>
 (()=>{'use strict';
@@ -942,7 +950,7 @@ function expandFarmland(){ensureFields();if(W.abandoned||W.day%90!==0||W.fields.
 function emergencyFoodWork(n,s){if(n.age<15||n.health<24||n.energy<22)return false;const pop=people().length;if(pop<1)return false;const shortage=W.food<pop*62,disaster=!!W.crisis?.active;if(!shortage&&!disaster)return false;if(!['labor','carpenter','merchant','miller','cheesemaker','advisor','beekeeper','guard'].includes(n.role))return false;if(!shortage&&W.food>pop*100)return false;if(n.role==='guard'&&count('guard')<=1&&W.food>pop*17)return false;n.energy=Math.max(0,n.energy-11);n.site='forest';n.action='비상 구근·나물 채집';const forestFactor=clip((W.forest-12)/88,0,.95),amount=Math.max(0,Math.round((s==='겨울'?1.7:3.1)*(.55+skill(n)/110)*forestFactor*(n.traits.curiosity>60?1.18:1)));if(amount>0){stockFood('vegetables',amount);W.emergencyHarvests=(W.emergencyHarvests||0)+amount;W.forest=clip(W.forest-.028*amount,12,100)}return true}
 function dailyStep(){if(W.abandoned){return}W.day++;initHouseholdEconomy();W.cropLast=0;W.foragedLast=0;W.dailyProduction={};progressCrops();manageHerd();crisisChange();handleAging();const s=season();for(const n of people()){initMind(n);n.site=chooseSite(n);if(W.day%3===0||n.mind.lastDecision===0)chooseIntent(n);if(n.age>=60&&n.energy<30&&chance(.65)){n.action='체력 회복·조언';n.energy=Math.min(cap(n),n.energy+22);if(n.role==='farmer')research('farm',n,.24);continue}if(emergencyFoodWork(n,s))continue;if(applyIntention(n,s))continue;gatherOutputs(n,s)}
 if(W.food<W.foodCap*.8&&W.stage>=1&&W.food>people().length*70&&chance(.14))W.tech.trade.points+=.8;W.stageDays++;
-feedVillage();for(const n of people()){initMind(n);updateNeedsDaily(n,s);const h=householdFor(n),debt=currentDebt(h);n.stress=clip(n.stress+(n.hunger>60?1.4:0)+(debt>15?.15:0)+(n.health<30?.4:0)-(friends(n).length>0?.28:0)-(n.energy>55?.08:0),0,100)}decayFood();if(W.day%3===0)socialConflict();if(W.day%12===0)jobMarket();if(W.day%45===0)familyStep();initHouseholdEconomy();if(W.day%90===0)expandFarmland();if(W.day%14===0)updateMarketPrices();agrarianPolitics();settleHouseholds();if(W.day%30===0){seekEmployment();seekCredit();settleEmployment()}if(W.day%15===0)settleDebt();if(W.day%90===0)mediateCredit();if(W.day%365===0)reviewPolitics();if(W.day%7===0){visitFriends();policyDecision();planBuilding()}if(W.day%14===0)rebellion();if(W.day%30===0)nextStage();maybeImmigration();checkExtinction();if(W.day%30===0)addEvent(`${date().year}년 ${date().month}월, 주민 ${people().length}명 · 비축 ${Math.round(W.food)}자루 · 농업 ${W.tech.farm.lvl}단계 · ${W.state||'존속'}.`);if(W.day%7===0)save()}
+feedVillage();for(const n of people()){initMind(n);updateNeedsDaily(n,s);const h=householdFor(n),debt=currentDebt(h);n.stress=clip(n.stress+(n.hunger>60?1.4:0)+(debt>15?.15:0)+(n.health<30?.4:0)-(friends(n).length>0?.28:0)-(n.energy>55?.08:0),0,100)}decayFood();if(W.day%3===0)socialConflict();if(W.day%12===0)jobMarket();if(W.day%45===0)familyStep();initHouseholdEconomy();if(W.day%90===0)expandFarmland();if(W.day%14===0)updateMarketPrices();agrarianPolitics();settleHouseholds();if(W.day%30===0){seekEmployment();seekCredit();settleEmployment()}if(W.day%15===0)settleDebt();if(W.day%90===0)mediateCredit();if(W.day%365===0)reviewPolitics();if(W.day%7===0){visitFriends();policyDecision();planBuilding()}if(W.day%14===0)rebellion();if(W.day%30===0)nextStage();maybeImmigration();checkExtinction();if(W.day%90===0)developVillageRoutes();if(W.day%30===0)addEvent(`${date().year}년 ${date().month}월, 주민 ${people().length}명 · 비축 ${Math.round(W.food)}자루 · 농업 ${W.tech.farm.lvl}단계 · ${W.state||'존속'}.`);if(W.day%7===0)save()}
 function snapshot(){return {seed:W.seed,year:date().year,month:date().month,day:date().day,elapsed:W.day,pop:people().length,dead:W.dead,immigration:W.immigration,emigration:W.emigration,food:Math.round(W.food),births:W.births,marriages:W.marriages,clanCount:W.clans?.filter(c=>clanMembers(c).length).length||0,politicalSystem:W.governance?.system||'elected',politicalScale:W.governance?.scale||'village',politicalTitle:politicalTitle(),hamletCount:W.hamlets?.length||1,politicalChanges:W.governance?.politicalChanges||0,hereditaryTransitions:W.governance?.hereditaryTransitions||0,leaderHistory:W.governance?.headHistory?.length||0,familyMeals:W.familyMeals,inheritances:W.inheritances,landReallocated:W.landReallocated||0,householdInheritances:W.familyInheritance||0,propertyReversions:W.propertyReversions||0,houseReassigned:W.houseReassigned||0,children:people().filter(n=>n.role==='child').length,harvestWages:W.harvestWages||0,wageGrain:W.wageGrain||0,hiringDays:W.hiringDays||0,sharecropContracts:W.sharecropContracts||0,households:W.households?.length||0,privateFood:Math.round(W.households?.reduce((x,h)=>x+householdFood(h),0)||0),ownedHomes:W.households?.filter(h=>h.homeIndex!==null).length||0,grainPrice:W.marketPrices?.grain||null,householdBarters:W.householdBarters||0,householdAid:W.householdAid||0,householdSales:W.householdSales||0,loansMade:W.loansMade||0,loanDefaults:W.loanDefaults||0,loansRepaid:W.loansRepaid||0,loanMediations:W.loanMediations||0,activeLoans:W.loans?.filter(l=>['active','extended','defaulted'].includes(l.status)).length||0,contractsSigned:W.contractsSigned||0,contractsBroken:W.contractsBroken||0,contractWages:W.contractWages||0,wageClaims:W.wageClaims||0,debtLaborPayments:W.debtLaborPayments||0,marketDeals:W.marketDeals||0,landReforms:W.landReforms||0,landSales:W.landSales||0,gini:inequality().gini,landlessHouseholds:inequality().landless,apprentices:W.apprentices,careerChanges:W.careerChanges,harvests:W.harvests||0,failedHarvests:W.failedHarvests||0,grainProduced:W.fieldOutput||0,landCleared:W.landCleared||0,fields:W.fields?.map(p=>({id:p.id,state:p.state,soil:Math.round(p.soil),progress:Math.round(p.progress),lastYield:p.lastYield})),wood:Math.round(W.wood),stone:Math.round(W.stone),tools:Math.round(W.tools),stage:W.stage,tech:Object.fromEntries(Object.entries(W.tech).map(([k,v])=>[k,v.lvl])),buildings:{...W.buildings},grievance:Math.round(W.grievance),crimes:W.crimeCount,solvedCrimes:W.solvedCrimes,uprisings:W.uprisings,ruined:W.abandoned,crisis:W.crisis?.active||false,research:W.researchUnlocked,buildingCount:W.buildCompleted,policy:W.localPolicy,mind:mindActionStats(),mindActionsByPlan:Object.fromEntries(['gather','reserve','social','help','retrain','improve','study','mentor','rest','protest','trade','escape'].map(k=>[k,W.people.filter(n=>n.alive&&n.mind?.plan===k).length])),needActions:{...(W.needActions||{})},maslowTransitions:W.maslowTransitions||0,maslowRegressions:W.maslowRegressions||0,maslowDistribution:Object.fromEntries([1,2,3,4,5].map(i=>[i,people().filter(n=>n.maslowLevel===i).length])),needsCounters:{sleep:W.needsSleepActions||0,water:W.needsWaterActions||0,warmth:W.needActions?.warm||0,hygiene:W.needsWashingActions||0,courtship:W.adultCourtships||0,affection:W.adultBonding||0,play:W.playActions||0,creative:W.ideasAttempted||0,esteem:W.recognitionActs||0},events:W.events.length}}
 function save(){try{localStorage.setItem('everworld_v28_human_needs',JSON.stringify(W))}catch(e){}}
 function load(){try{const raw=JSON.parse(localStorage.getItem('everworld_v28_human_needs')||'null');if(!raw||!raw.people||!raw.tech||raw.day<1)return false;W=raw;ensureProducts();ensureFields();ensureFamilies();initHouseholdEconomy();ensureDynasties();for(const n of W.people){initMind(n);initNeeds(n)}W.cattle??=4;W.fodder??=90;W.animalHealth??=85;W.pasture??=85;W.orchardTrees??=4;W.orchardHealth??=88;W.fishStock??=85;W.fishCap??=115;W.hives??=2;W.beeHealth??=85;W.tech.husbandry??={lvl:0,points:0};W.tech.orchard??={lvl:0,points:0};W.tech.preserve??={lvl:0,points:0};W.buildings.dairy??=1;W.buildings.cellar??=0;W.buildings.smokehouse??=0;selection=people()[0]?.id||null;return true}catch(e){return false}}
@@ -954,18 +962,133 @@ function rect(x,y,w,h,fill){ctx.fillStyle=fill;ctx.fillRect(x,y,w,h)}function te
 let motionWorld=null,motionClock=0,lastFrameTime=0;
 const journeys=new Map();
 const placeNames={castle:'마을 회관',fields:'남쪽 밭',forest:'숲',home:'집',watch:'초소',workshop:'목재 작업장',building:'건설 현장',market:'교환터',pasture:'목초지',orchard:'과수원',river:'강가',apiary:'벌통'};
-const walkingLinks=[['castle','building'],['building','fields'],['building','home'],['building','forest'],['building','watch'],['building','workshop'],['building','pasture'],['building','orchard'],['orchard','apiary'],['workshop','river'],['building','market']];
-function walkingNodes(){return {...Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,[v[0]*900,v[1]*570]])),apiary:[418,238]}}
+function walkingNodes(){return {...Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,[v[0]*900,v[1]*570]])),apiary:[418,238],castle:[650,170],workshop:[490,449],building:[548,295]}}
+
+// Civic planning is deterministic and uses observed commutes, not the survival RNG.
+// Houses keep their chosen lot; only new construction chooses a new address.
+const streetCell=8,streetCols=113,streetRows=61;
+const villageBackbone=[[[376,270],[576,270],[576,458],[376,458],[376,270]],[[376,270],[376,170],[576,170],[576,270]],[[376,170],[220,170],[220,120]],[[376,458],[324,458],[324,472]]];
+const civicReserves=[[0,0,270,235],[16,306,340,152],[250,140,180,112],[365,78,138,115],[548,38,205,145],[440,360,112,99],[462,302,101,88],[432,280,50,46],[390,200,130,39],[0,486,900,84]];
+let streetCache=null;
+function lotBounds(p,padding=0){return [p.x-33*p.scale-padding,p.y-40*p.scale-padding,66*p.scale+padding*2,66*p.scale+padding*2]}
+function boxesOverlap(a,b){return a[0]<b[0]+b[2]&&a[0]+a[2]>b[0]&&a[1]<b[1]+b[3]&&a[1]+a[3]>b[1]}
+function backboneCrosses(box){
+ for(const line of villageBackbone)for(let i=1;i<line.length;i++){
+  const [a,b]=[line[i-1],line[i]],bounds=[Math.min(a[0],b[0])-5,Math.min(a[1],b[1])-5,Math.abs(a[0]-b[0])+10,Math.abs(a[1]-b[1])+10];
+  if(boxesOverlap(box,bounds))return true;
+ }return false;
+}
+function ensureVillagePlan(){
+ if(!W.villagePlan||W.villagePlan.version!==1)W.villagePlan={version:1,homes:{},trails:{},revision:0,lastReview:W.day-W.day%90};
+ const plan=W.villagePlan;plan.homes??={};plan.trails??={};if(Object.keys(plan.homes).length>=W.buildings.homes)return plan;
+ const lots=[];
+ for(let row=0;row<3;row++)for(let col=0;col<4;col++)lots.push({x:625+col*71,y:330+row*62,scale:.8});
+ for(let col=0;col<3;col++)lots.push({x:60+col*75,y:282,scale:.72});
+ for(let col=0;col<2;col++)lots.push({x:795+col*65,y:235,scale:.8});
+ for(let row=0;row<2;row++)for(let col=0;col<9;col++)lots.push({x:32+col*36,y:252+row*30,scale:.4});
+ for(let col=0;col<6;col++)lots.push({x:300+col*50,y:45,scale:.5});
+ for(let row=0;row<2;row++)for(let col=0;col<3;col++)lots.push({x:780+col*40,y:206+row*40,scale:.5});
+ for(let col=0;col<3;col++)lots.push({x:780+col*40,y:45,scale:.5});
+ for(let y=32;y<=466;y+=24)for(let x=25;x<=875;x+=24)lots.push({x,y,scale:.25});
+ for(let i=0;i<W.buildings.homes;i++){
+  if(plan.homes[i])continue;
+  const owner=W.households?.find(h=>h.homeIndex===i),members=owner?householdMembers(owner):[],workplaces=members.filter(n=>n.age>=15).map(n=>zones[chooseSite(n)]||zones.home).map(p=>[p[0]*900,p[1]*570]);
+  if(!workplaces.length)workplaces.push([621,388]);
+  const occupied=Object.values(plan.homes),busyRoads=Object.entries(plan.trails).filter(([,use])=>use>=8).map(([key])=>streetPoint(Number(key))),valid=lots.filter(p=>{
+   const b=lotBounds(p,3);return !civicReserves.some(r=>boxesOverlap(b,r))&&!occupied.some(q=>boxesOverlap(b,lotBounds(q,3)))&&!backboneCrosses(b)&&!busyRoads.some(([x,y])=>x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3]);
+  });
+  let best=null,bestScore=Infinity;
+  for(const lot of valid){
+   const commute=workplaces.reduce((sum,p)=>sum+Math.hypot(lot.x-p[0],lot.y-p[1]),0)/workplaces.length;
+   const neighbor=occupied.length?Math.min(...occupied.map(p=>Math.hypot(lot.x-p.x,lot.y-p.y))):60;
+   const score=commute+.25*neighbor+(1-lot.scale)*500;
+   if(score<bestScore){bestScore=score;best=lot}
+  }
+  // Existing homes are never relocated to fit new ones.
+  if(best){plan.homes[i]={...best};plan.revision++}
+ }
+ return plan;
+}
+function homeMarker(i){if(!Number.isInteger(i)||i<0||i>=W.buildings.homes)return null;return ensureVillagePlan().homes[i]||null}
+function streetKey(x,y){return Math.floor(y/streetCell)*streetCols+Math.floor(x/streetCell)}
+function streetPoint(key){return [(key%streetCols)*streetCell+4,Math.floor(key/streetCols)*streetCell+4]}
+function getStreetGrid(){
+ const plan=ensureVillagePlan(),signature=plan.revision+':'+W.fields.length;
+ if(streetCache?.world===W&&streetCache.signature===signature)return streetCache;
+ const blocked=new Set(),base=new Set();
+ // Preserve crops, river banks, buildings and the well. Workers enter fields locally.
+ const obstacles=[[16,306,340,152],[548,38,205,125],[365,78,138,115],[440,360,112,75],[432,280,50,46],...Object.values(plan.homes).map(p=>lotBounds(p))];
+ for(let y=0;y<streetRows;y++)for(let x=0;x<streetCols;x++){
+  const px=x*8+4,py=y*8+4;if(px>=896||py>=482||obstacles.some(b=>px>=b[0]&&px<=b[0]+b[2]&&py>=b[1]&&py<=b[1]+b[3]))blocked.add(y*streetCols+x);
+ }
+ for(const line of villageBackbone)for(let i=1;i<line.length;i++){
+  const [a,b]=[line[i-1],line[i]],steps=Math.ceil(Math.hypot(a[0]-b[0],a[1]-b[1])/3);
+  for(let j=0;j<=steps;j++){const key=streetKey(a[0]+(b[0]-a[0])*j/steps,a[1]+(b[1]-a[1])*j/steps);if(!blocked.has(key))base.add(key)}
+ }
+ streetCache={world:W,signature,blocked,base,routes:new Map()};return streetCache;
+}
+function nearestStreet(point,grid){
+ const cx=Math.max(0,Math.min(streetCols-1,Math.floor(point[0]/8))),cy=Math.max(0,Math.min(streetRows-1,Math.floor(point[1]/8)));
+ for(let radius=0;radius<24;radius++){
+  let best=null,distance=Infinity;
+  for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
+   if(radius&&Math.abs(dx)!==radius&&Math.abs(dy)!==radius)continue;
+   const x=cx+dx,y=cy+dy,key=y*streetCols+x;if(x<0||x>=streetCols||y<0||y>=streetRows||grid.blocked.has(key))continue;
+   const p=streetPoint(key),d=Math.hypot(point[0]-p[0],point[1]-p[1]);if(d<distance){distance=d;best=key}
+  }if(best!==null)return best;
+ }return null;
+}
+function streetRoute(from,to){
+ const grid=getStreetGrid(),start=nearestStreet(from,grid),goal=nearestStreet(to,grid);if(start===null||goal===null)return [];
+ const cacheKey=start+':'+goal;if(grid.routes.has(cacheKey))return grid.routes.get(cacheKey).map(p=>p.slice());
+ const total=streetCols*streetRows,cost=new Float64Array(total).fill(Infinity),previous=new Int32Array(total).fill(-1),closed=new Uint8Array(total),heap=[];
+ const gx=goal%streetCols,gy=Math.floor(goal/streetCols),heuristic=k=>Math.hypot(k%streetCols-gx,Math.floor(k/streetCols)-gy)*.78;
+ const push=(key,score)=>{heap.push([key,score]);let i=heap.length-1;while(i){const parent=(i-1)>>1;if(heap[parent][1]<=score)break;heap[i]=heap[parent];i=parent}heap[i]=[key,score]};
+ const pop=()=>{const first=heap[0],last=heap.pop();if(heap.length){let i=0;while(i*2+1<heap.length){let child=i*2+1;if(child+1<heap.length&&heap[child+1][1]<heap[child][1])child++;if(last[1]<=heap[child][1])break;heap[i]=heap[child];i=child}heap[i]=last}return first[0]};
+ cost[start]=0;push(start,heuristic(start));
+ while(heap.length){
+  const current=pop();if(closed[current])continue;closed[current]=1;if(current===goal)break;
+  const x=current%streetCols,y=Math.floor(current/streetCols);
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]){
+   const nx=x+dx,ny=y+dy,next=ny*streetCols+nx;if(nx<0||nx>=streetCols||ny<0||ny>=streetRows||grid.blocked.has(next)||closed[next])continue;
+   if(dx&&dy&&(grid.blocked.has(y*streetCols+nx)||grid.blocked.has(ny*streetCols+x)))continue;
+   const use=W.villagePlan.trails[next]||0,factor=grid.base.has(next)||use>=8?.8:use>=3?.95:1.15,proposal=cost[current]+(dx&&dy?Math.SQRT2:1)*factor;
+   if(proposal<cost[next]){cost[next]=proposal;previous[next]=current;push(next,proposal+heuristic(next))}
+  }
+ }
+ if(!closed[goal])return [];
+ const keys=[goal];while(keys[0]!==start&&previous[keys[0]]>=0)keys.unshift(previous[keys[0]]);
+ const points=keys.map(streetPoint);if(grid.routes.size>300)grid.routes.clear();grid.routes.set(cacheKey,points);return points.map(p=>p.slice());
+}
+function routeTo(n,destination){
+ let target=destination.point.slice();
+ if(destination.site==='fields')target=[target[0],300];
+ const route=streetRoute([n.fx,n.fy],target);
+ if(!route.length)return []; // Never invent a road through a protected district.
+ return [...route,target,destination.point.slice()];
+}
+function developVillageRoutes(){
+ if(W.abandoned)return;const plan=ensureVillagePlan();if(W.day-plan.lastReview<90)return;plan.lastReview=W.day;
+ const residents=people().filter(n=>n.age>=15),offset=Math.floor(W.day/90)%Math.max(1,residents.length);
+ for(let i=0;i<Math.min(24,residents.length);i++){
+  const n=residents[(offset+i)%residents.length],home=destinationFor({...n,site:'home'}),work=destinationFor({...n,site:chooseSite(n)}),route=streetRoute(home.point,work.site==='fields'?[work.point[0],300]:work.point);
+  for(const p of route){const key=streetKey(...p);plan.trails[key]=Math.min(100,(plan.trails[key]||0)+1)}
+ }
+ getStreetGrid().routes.clear();
+}
+function drawVillageRoads(){
+ const grid=getStreetGrid(),plan=W.villagePlan;
+ // A narrow loop and neighborhood lanes replace the old central spokes.
+ const keys=new Set([...grid.base,...Object.keys(plan.trails).map(Number)]),visible=[];
+ for(const key of keys){if(grid.blocked.has(key))continue;const use=plan.trails[key]||0,main=grid.base.has(key)||use>=8;if(main||use>=3)visible.push({key,main})}
+ for(const {key,main}of visible){const [x,y]=streetPoint(key),size=main?12:7;rect(x-size/2,y-size/2,size,size,main?'#a99e70':'#a9a377')}
+ for(const {key,main}of visible)if(main){const [x,y]=streetPoint(key);rect(x-5,y-5,10,10,'#c7b985');if(key%7===0)rect(x,y,2,2,'#ad9e6f')}
+
+}
 
 function fieldMarker(i){
  const dense=W.fields.length>14,columns=dense?9:7,width=dense?32:42,height=dense?42:62;
  return {x:24+(i%columns)*(dense?36:47),y:314+Math.floor(i/columns)*(dense?46:72),width,height};
-}
-function homeMarker(i){
- const count=W.buildings.homes;if(!Number.isInteger(i)||i<0||i>=count)return null;
- if(count<=10)return {x:605+(i%4)*67,y:356+Math.floor(i/4)*67,scale:1};
- const columns=Math.max(6,Math.ceil(Math.sqrt(count*1.6))),rows=Math.ceil(count/columns),dx=270/columns,dy=150/rows;
- return {x:590+(i%columns)*dx,y:330+Math.floor(i/columns)*dy,scale:Math.min(.72,dx/66,dy/68)};
 }
 function syncJourneyView(){
  journeys.clear();motionWorld=W;motionClock=0;
@@ -994,18 +1117,6 @@ function destinationFor(n){
   point=[marker.x+marker.width/2+(n.id%3-1)*3,marker.y+marker.height/2];name='남쪽 '+(i+1)+'번 밭';
  }else{point[0]+=(n.id%5-2)*7;point[1]+=(n.id%3-1)*6}
  return {site,point,name,action:n.action||'생활'};
-}
-function routeTo(n,destination){
- if(Math.hypot(n.fx-destination.point[0],n.fy-destination.point[1])<75)return [destination.point.slice()];
- const nodes=walkingNodes(),keys=Object.keys(nodes),distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
- const start=keys.reduce((a,b)=>distance(nodes[a],[n.fx,n.fy])<distance(nodes[b],[n.fx,n.fy])?a:b);
- const costs=Object.fromEntries(keys.map(k=>[k,Infinity])),previous={},todo=new Set(keys);costs[start]=0;
- while(todo.size){
-  const current=[...todo].reduce((a,b)=>costs[a]<costs[b]?a:b);todo.delete(current);if(current===destination.site)break;
-  for(const [a,b] of walkingLinks){const next=a===current?b:b===current?a:null;if(!next||!todo.has(next))continue;const cost=costs[current]+distance(nodes[current],nodes[next]);if(cost<costs[next]){costs[next]=cost;previous[next]=current}}
- }
- const path=[destination.site];while(path[0]!==start&&previous[path[0]])path.unshift(previous[path[0]]);
- return [...path.map(k=>nodes[k].slice()),destination.point.slice()];
 }
 function motionFor(n){
  if(motionWorld!==W){motionWorld=W;journeys.clear();motionClock=0}
@@ -1110,13 +1221,7 @@ function drawWorld(){
   rect(x,y+7,6,4,'#a1bfaa');
  }
  for(let i=0;i<95;i++){const x=(i*89)%900,y=514+(i*17)%56;rect(x,y,10+(i%4)*4,2,i%3?'#74a4a1':'#a4c4b1')}
- // Paths are laid down as small blocks rather than smooth vector strokes.
- const paths=walkingLinks;const roadZones={...zones,apiary:[418/900,238/570]};
- for(let layer=0;layer<2;layer++)for(const [a,b] of paths){
-  const from=roadZones[a],to=roadZones[b],dx=(to[0]-from[0])*900,dy=(to[1]-from[1])*570,steps=Math.ceil(Math.hypot(dx,dy)/5);
-  for(let i=0;i<=steps;i++){const x=Math.round((from[0]*900+dx*i/steps)/4)*4,y=Math.round((from[1]*570+dy*i/steps)/4)*4;rect(x-(layer?10:12),y-(layer?7:9),layer?20:24,layer?14:18,layer?'#c5b780':'#9e9569')}
- }
- for(const [a,b] of paths){const from=roadZones[a],to=roadZones[b];for(let i=1;i<15;i++){const x=Math.round((from[0]+(to[0]-from[0])*i/15)*450)*2,y=Math.round((from[1]+(to[1]-from[1])*i/15)*285)*2;rect(x+(i%3)*2-2,y,4,2,'#afa273')}}
+ drawVillageRoads();
  // Fenced fields follow the actual crop state.
  for(let i=0;i<(W.fields?.length||0);i++){
   const marker=fieldMarker(i),x=0,y=0,plot=W.fields[i],ripe=plot.state==='ripe',growing=plot.state==='growing';ctx.save();ctx.translate(marker.x,marker.y);ctx.scale(marker.width/42,marker.height/62);
@@ -1135,16 +1240,16 @@ function drawWorld(){
  }
  // Apiary, sacks, a well, and a working timber yard.
  for(let i=0;i<Math.min(6,W.hives||0);i++){const x=397+i*18;rect(x,211,13,18,'#997140');rect(x-2,210,17,4,'#d8b76d');for(let k=0;k<3;k++)rect(x+2,216+k*4,9,2,'#d2ac60');rect(x+4,228,6,2,'#483e2a')}
- for(let i=0;i<W.buildings.homes;i++){const marker=homeMarker(i);ctx.save();ctx.translate(marker.x,marker.y);ctx.scale(marker.scale,marker.scale);house(0,0,i);ctx.restore()}
+ for(let i=0;i<W.buildings.homes;i++){const marker=homeMarker(i);if(!marker)continue;ctx.save();ctx.translate(marker.x,marker.y);ctx.scale(marker.scale,marker.scale);house(0,0,i);rect(15,24,12,4,'#6d8050');rect(17,21,3,4,'#e1bd75');rect(23,20,3,4,'#c67b65');ctx.restore()}
  house(650,122,1,'hall');if(W.governance?.scale!=='village'){house(574,134,1);house(730,134,1)}
  house(429,135,2,'barn');
  for(let i=0;i<4;i++){rect(390+i*13,171,10,11,'#baa273');rect(392+i*13,169,6,3,'#d0ba84')}
  house(495,411,1,W.buildings.workshop?'barn':'home');
  for(let i=0;i<5;i++){rect(440+i*3,440-i*6,34,5,'#795d3c');rect(440+i*3,440-i*6,4,5,'#c49d65');rect(468+i*3,440-i*6,6,2,'#9d794d')}
  rect(446,298,22,13,'#8e957e');rect(448,295,18,5,'#c0c5a2');rect(451,295,11,4,'#476c69');rect(445,285,3,12,'#8c754c');rect(467,285,3,12,'#8c754c');rect(443,282,29,4,'#bc915c');
- fence(476,314,103);fence(476,377,103);
+ fence(474,314,84);fence(474,377,84);
  for(let i=0;i<Math.min(9,W.cattle||0);i++){
-  const x=483+(i%4)*28,y=341+Math.floor(i/4)*20;
+  const x=480+(i%3)*26,y=332+Math.floor(i/3)*18;
   rect(x,y+8,3,6,'#6c6348');rect(x+15,y+8,3,6,'#6c6348');rect(x,y,20,10,'#dfd7af');rect(x+4,y,7,5,'#8c8062');rect(x+17,y+2,7,8,'#c8bc94');rect(x+21,y+3,2,2,'#38483b');
  }
  // Landing stage and reeds.
@@ -1157,7 +1262,7 @@ function drawWorld(){
  const inhabitants=people();const followed=find(selection);if(followed?.alive)drawJourney(followed);
  for(const n of [...inhabitants].sort((a,b)=>a.fy-b.fy))pixelPerson(n,n.fx,n.fy);
  function chip(label,x,y){ctx.font='bold 10px system-ui';const w=ctx.measureText(label).width+16;rect(x-w/2,y-12,w,18,'#294334d9');text(label,x,y,10,'#efe2b2')}
- chip('곡물 창고',429,70);chip(W.abandoned?'버려진 회관':'마을 회관',650,44);chip('주거지',722,297);
+ chip('곡물 창고',429,70);chip(W.abandoned?'버려진 회관':'마을 회관',650,44);chip('생활 구역',722,282);
  const selected=find(selection);if(selected?.alive){chip(selected.name+' · '+motionStatus(selected),clip(selected.fx,100,800),Math.max(48,selected.fy-38))}
  if(W.timeIsNight)rect(0,0,900,570,'#17213855');
  if(W.abandoned){rect(0,0,900,570,'#1a1714a8');text('마을 멸망 — 이곳은 폐허가 되었다',450,278,25,'#ffe6ad')}
@@ -1302,13 +1407,49 @@ renderRecentEvents();if(tab==='people')renderPeople();else if(tab==='news')rende
 function switchTab(key){tab=key;el('app').classList.add('card-opened');for(const k of ['people','news','economy','families','politics','laws']){el(k==='economy'?'ecoPanel':k+'Panel').hidden=k!==key;el('tab-'+k).classList.toggle('active',k===key)}render()}
 function selectResident(id){selection=id;page=Math.max(0,Math.floor(people().findIndex(n=>n.id===id)/(window.innerHeight>850?7:5)));switchTab('people')}
 function canvasClick(ev){const r=canvas.getBoundingClientRect();const scale=Math.min(r.width/900,r.height/570),x=(ev.clientX-r.left-(r.width-900*scale)/2)/scale,y=(ev.clientY-r.top-(r.height-570*scale)/2)/scale;if(x<0||x>900||y<0||y>570)return;let nearest=null,best=1e9;for(const n of people()){const dist=Math.hypot(n.fx-x,n.fy-y);if(dist<best){best=dist;nearest=n}}if(nearest&&best<45){selectResident(nearest.id)}}
-function setSpeed(v){speed=v;paused=false;el('pause').textContent='일시정지';el('pause').classList.remove('active');for(const b of document.querySelectorAll('[data-speed]'))b.classList.toggle('active',Number(b.dataset.speed)===v);startClock()}
-function frame(now){if(!W)return;const dt=lastFrameTime?Math.min(.05,(now-lastFrameTime)/1000):0;lastFrameTime=now;advanceJourneys(dt);drawWorld();updateMotionCard();requestAnimationFrame(frame)}
+function setSpeed(v){speed=v;paused=false;el('speedMenu').value=String(v);el('pause').textContent='일시정지';el('pause').classList.remove('active');for(const b of document.querySelectorAll('[data-speed]'))b.classList.toggle('active',Number(b.dataset.speed)===v);startClock()}
+function frame(now){if(!W)return;if(skipTask){lastFrameTime=now;requestAnimationFrame(frame);return}const dt=lastFrameTime?Math.min(.05,(now-lastFrameTime)/1000):0;lastFrameTime=now;advanceJourneys(dt);drawWorld();updateMotionCard();requestAnimationFrame(frame)}
 function startClock(){if(timer)clearInterval(timer);timer=setInterval(()=>{if(!paused&&!W.abandoned){const steps=speed>=24?2:1;for(let i=0;i<steps;i++)dailyStep();render()}},speed>=24?150:700/speed)}
-function skipDays(days){if(!W)return;for(let i=0;i<days&&!W.abandoned;i++)dailyStep();syncJourneyView();save();render()}
+
+let skipTask=null,skipNoticeTimer=null;
+function calendarSkipDays(years){
+ const d=date(),targetYear=d.year+years,lastDay=new Date(Date.UTC(targetYear,d.month,0)).getUTCDate();
+ return Math.round((Date.UTC(targetYear,d.month-1,Math.min(d.day,lastDay))-Date.UTC(d.year,d.month-1,d.day))/86400000);
+}
+function skipNotice(message,done=0,total=0){
+ el('skipProgress').hidden=false;el('skipMessage').textContent=message;el('skipMeter').hidden=!total;
+ if(total){el('skipMeter').max=total;el('skipMeter').value=done}
+}
+async function skipDays(days){
+ if(!W||skipTask)return;clearTimeout(skipNoticeTimer);
+ if(days<=30){el('skipProgress').hidden=true;for(let i=0;i<days&&!W.abandoned;i++)dailyStep();syncJourneyView();save();render();return}
+ const task={world:W,total:days,done:0,cancelled:false},wasPaused=paused;skipTask=task;paused=true;
+ const controls=[...document.querySelectorAll('footer button,footer select')].filter(e=>e.id!=='skip').map(e=>[e,e.disabled]);
+ controls.forEach(([e])=>e.disabled=true);el('skip').textContent='중단';let failed=false,lastPreview=0;
+ try{
+  skipNotice('시간을 건너뛰는 중…',0,days);
+  await new Promise(resolve=>setTimeout(resolve,0));
+  while(task.done<days&&!W.abandoned&&!task.cancelled&&task.world===W){
+   const until=performance.now()+12;let batch=0;
+   do{dailyStep();task.done++;batch++}while(task.done<days&&!W.abandoned&&batch<25&&performance.now()<until);
+   if(performance.now()-lastPreview>180){const d=date();skipNotice(d.year+'년 '+d.month+'월 · '+Math.floor(task.done/days*100)+'%',task.done,days);render();lastPreview=performance.now()}
+   await new Promise(resolve=>setTimeout(resolve,0));
+  }
+ }catch(error){failed=true;console.error(error)}
+ finally{
+  controls.forEach(([e,disabled])=>e.disabled=disabled);el('skip').textContent='건너뛰기';skipTask=null;
+  if(task.world===W){
+   syncJourneyView();save();paused=failed?true:wasPaused;el('pause').textContent=paused?'계속 진행':'일시정지';el('pause').classList.toggle('active',paused);
+   const d=date(),when=d.year+'년 '+d.month+'월 '+d.day+'일';
+   skipNotice(failed?'계산을 중단했습니다 · 현재까지 저장됨':W.abandoned?'마을 소멸로 중단 · '+when:task.cancelled?'중단 · '+when+'까지 저장됨':'완료 · '+when);
+   render();skipNoticeTimer=setTimeout(()=>el('skipProgress').hidden=true,7000);
+  }
+ }
+}
+
 el('showCard').onclick=()=>switchTab('people');el('closeCard').onclick=()=>{el('app').classList.remove('card-opened');el('showCard').focus()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.innerWidth<=760){el('app').classList.remove('card-opened');el('showCard').focus()}});
 el('openChronicle').onclick=()=>switchTab('news');
-el('tab-people').onclick=()=>switchTab('people');el('tab-news').onclick=()=>switchTab('news');el('tab-economy').onclick=()=>switchTab('economy');el('tab-families').onclick=()=>switchTab('families');el('tab-politics').onclick=()=>switchTab('politics');el('tab-laws').onclick=()=>switchTab('laws');el('prev').onclick=()=>{page=Math.max(0,page-1);renderPeople()};el('next').onclick=()=>{page++;renderPeople()};el('pause').onclick=()=>{paused=!paused;el('pause').textContent=paused?'계속 진행':'일시정지';el('pause').classList.toggle('active',paused)};for(const b of document.querySelectorAll('[data-speed]'))b.onclick=()=>setSpeed(Number(b.dataset.speed));el('skip').onclick=()=>skipDays(30);el('reset').onclick=()=>{const proceed=confirm('기존 왕국을 초기화하고 새 자급생활 마을을 만들까요?');if(proceed){generate((Date.now()>>>0)^Math.floor(Math.random()*1e9));setSpeed(1);render()}};canvas.addEventListener('click',canvasClick);
+el('tab-people').onclick=()=>switchTab('people');el('tab-news').onclick=()=>switchTab('news');el('tab-economy').onclick=()=>switchTab('economy');el('tab-families').onclick=()=>switchTab('families');el('tab-politics').onclick=()=>switchTab('politics');el('tab-laws').onclick=()=>switchTab('laws');el('prev').onclick=()=>{page=Math.max(0,page-1);renderPeople()};el('next').onclick=()=>{page++;renderPeople()};el('pause').onclick=()=>{paused=!paused;el('pause').textContent=paused?'계속 진행':'일시정지';el('pause').classList.toggle('active',paused)};for(const b of document.querySelectorAll('[data-speed]'))b.onclick=()=>setSpeed(Number(b.dataset.speed));el('speedMenu').onchange=()=>setSpeed(Number(el('speedMenu').value));el('skip').onclick=()=>{if(skipTask){skipTask.cancelled=true;return}const [unit,value]=el('skipPeriod').value.split(':');skipDays(unit==='years'?calendarSkipDays(Number(value)):Number(value))};el('reset').onclick=()=>{const proceed=confirm('기존 왕국을 초기화하고 새 자급생활 마을을 만들까요?');if(proceed){generate((Date.now()>>>0)^Math.floor(Math.random()*1e9));setSpeed(1);render()}};canvas.addEventListener('click',canvasClick);
 if(!load())generate((Date.now()>>>0)^123127);render();setSpeed(1);requestAnimationFrame(frame);window.addEventListener('pagehide',save);window.addEventListener('resize',render);
 window.__EVERWORLD__={step(n=1){for(let i=0;i<n&&!W.abandoned;i++)dailyStep();render();return snapshot()},snapshot,reset(seed=1840){generate(seed);return snapshot()},world:()=>W,pause(){paused=true},run(){paused=false},calendar:date};
 })();
