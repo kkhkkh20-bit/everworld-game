@@ -709,7 +709,9 @@ function factionOf(id){if(id===0)return 0;return ensureWorld().villages.find(v=>
 function factionName(id){return ensureWorld().factions.find(f=>f.id===factionOf(id))?.name||'사라진 세력'}
 function relation(a,b){const r=ensureWorld(),fa=factionOf(a),fb=factionOf(b);return fa===fb?80:r.relations[pairKey(fa,fb)]||0}
 function changeRelation(a,b,delta){const r=ensureWorld(),fa=factionOf(a),fb=factionOf(b);if(fa===fb)return;r.relations[pairKey(fa,fb)]=clip(relation(a,b)+delta,-100,100)}
-function regionVillage(id){
+let drawnVillages=null;
+function regionVillage(id){if(!drawnVillages)return regionVillageState(id);if(!drawnVillages.has(id))drawnVillages.set(id,regionVillageState(id));return drawnVillages.get(id)}
+function regionVillageState(id){
  const r=ensureWorld();
  if(id===0)return {id:0,name:'들녘마을',tx:r.homeTile.x,ty:r.homeTile.y,x:(r.homeTile.x+.5)/r.worldWidth,y:(r.homeTile.y+.5)/r.worldHeight,pop:people().length,food:W.food,wood:W.wood,stone:W.stone,coin:W.coin,level:W.development?.level||0,homes:W.buildings.homes,tech:Object.values(W.tech).reduce((s,t)=>s+t.lvl,0),soldiers:readySoldiers().length,fort:W.buildings.watch,schools:W.buildings.schools,factionId:0};
  return r.villages.find(v=>v.id===id);
@@ -1725,7 +1727,8 @@ function rect(x,y,w,h,fill){ctx.fillStyle=fill;ctx.fillRect(x,y,w,h)}function te
 let motionWorld=null,motionClock=0,lastFrameTime=0;
 const journeys=new Map();
 const placeNames={castle:'마을 회관',fields:'남쪽 밭',forest:'숲',home:'집',watch:'초소',workshop:'목재 작업장',building:'건설 현장',market:'교환터',pasture:'목초지',orchard:'과수원',river:'강가',apiary:'벌통',quarry:'채석장',clinic:'치료소',school:'배움터'};
-function walkingNodes(){return {...Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,[v[0]*900,v[1]*570]])),apiary:[418,238],quarry:[830,160],clinic:[650,255],school:[745,225],castle:[650,170],workshop:[490,449],building:[548,295]}}
+let walkingNodeCache;
+function walkingNodes(){return walkingNodeCache??={...Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,[v[0]*900,v[1]*570]])),apiary:[418,238],quarry:[830,160],clinic:[650,255],school:[745,225],castle:[650,170],workshop:[490,449],building:[548,295]}}
 
 // Civic planning is deterministic and uses observed commutes, not the survival RNG.
 // Houses keep their chosen lot; only new construction chooses a new address.
@@ -1753,9 +1756,10 @@ function ensureVillagePlan(){
   if(plan.homes[i])continue;
   const owner=W.households?.find(h=>h.homeIndex===i),members=owner?householdMembers(owner):[],workplaces=members.filter(n=>n.age>=15).map(n=>zones[chooseSite(n)]||zones.home).map(p=>[p[0]*900,p[1]*570]);
   if(!workplaces.length)workplaces.push([621,388]);
-  const occupied=Object.values(plan.homes),busyRoads=Object.entries(plan.trails).filter(([,use])=>use>=8).map(([key])=>streetPoint(Number(key))),valid=lots.filter(p=>{
-   const b=lotBounds(p,3);return !civicReserves.some(r=>boxesOverlap(b,r))&&!occupied.some(q=>boxesOverlap(b,lotBounds(q,3)))&&!backboneCrosses(b)&&!busyRoads.some(([x,y])=>x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3]);
-  });
+  const occupied=Object.values(plan.homes),busyRoads=Object.entries(plan.trails).filter(([,use])=>use>=8).map(([key])=>streetPoint(Number(key))),buildable=lots.filter(p=>{
+   const b=lotBounds(p,3);return !civicReserves.some(r=>boxesOverlap(b,r))&&!occupied.some(q=>boxesOverlap(b,lotBounds(q,3)))&&!backboneCrosses(b);
+  }),clear=buildable.filter(p=>{const b=lotBounds(p,3);return !busyRoads.some(([x,y])=>x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3])}),valid=clear.length?clear:buildable;
+  // Re-route informal footpaths when every spare lot is crossed; civic roads stay protected.
   let best=null,bestScore=Infinity;
   for(const lot of valid){
    const commute=workplaces.reduce((sum,p)=>sum+Math.hypot(lot.x-p[0],lot.y-p[1]),0)/workplaces.length;
@@ -2164,7 +2168,7 @@ function selectResident(id){selection=id;page=Math.max(0,Math.floor(people().fin
 function canvasClick(ev){if(surface){surfaceCanvasClick(ev);return}if(worldView==='region'){regionMapClick(ev);return}if(observedSettlementId!==0){switchTab('region');return}const r=canvas.getBoundingClientRect();const scale=Math.min(r.width/900,r.height/570),x=(ev.clientX-r.left-(r.width-900*scale)/2)/scale,y=(ev.clientY-r.top-(r.height-570*scale)/2)/scale;if(x<0||x>900||y<0||y>570)return;let nearest=null,best=1e9;for(const n of people()){const dist=Math.hypot(n.fx-x,n.fy-y);if(dist<best){best=dist;nearest=n}}if(nearest&&best<45){selectResident(nearest.id)}}
 function setSpeed(v){speed=v;paused=false;el('speedMenu').value=String(v);el('pause').textContent='일시정지';el('pause').classList.remove('active');for(const b of document.querySelectorAll('[data-speed]'))b.classList.toggle('active',Number(b.dataset.speed)===v);startClock()}
 let lastPaintTime=0;
-function frame(now){try{if(!W)return;if(skipTask){lastFrameTime=now;return}const dt=lastFrameTime?Math.min(.05,(now-lastFrameTime)/1000):0;lastFrameTime=now;advanceJourneys(dt);advanceRegionalResidents(dt);if(now-lastPaintTime>=1000/30){drawWorld();updateMotionCard();lastPaintTime=now}}finally{requestAnimationFrame(frame)}}
+function frame(now){try{if(!W)return;if(skipTask){lastFrameTime=now;return}const dt=lastFrameTime?Math.min(.25,(now-lastFrameTime)/1000):0;lastFrameTime=now;advanceJourneys(dt);advanceRegionalResidents(dt);if(now-lastPaintTime>=1000/30){drawWorld();updateMotionCard();lastPaintTime=now}}finally{requestAnimationFrame(frame)}}
 function startClock(){
  if(timer)clearInterval(timer);let budget=0,last=performance.now();
  timer=setInterval(()=>{const now=performance.now(),elapsed=Math.min(250,Math.max(0,now-last));last=now;
@@ -2348,7 +2352,7 @@ function drawSurfaceRegion(){
  ctx.restore();
 }
 function drawSurfaceSelection(){const s=surface.selection;if(!s||s.type==='person')return;const node=surface.nodes.find(n=>n.type===s.type&&n.key===s.key);if(node){const [x,y]=localToScreen(node.x,node.y);ctx.strokeStyle='#fff1bd';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y+8,23*surface.camera.zoom,9*surface.camera.zoom,0,0,Math.PI*2);ctx.stroke()}}
-function drawWorld(){if(!surface){if(worldView==='region')drawRegionMap();else drawLegacyVillage();return}if(worldView==='region')drawSurfaceRegion();else drawSurfaceVillage();positionSurfacePins();drawSurfaceMinimap();}
+function drawWorld(){const previous=drawnVillages;drawnVillages=new Map();try{if(!surface){if(worldView==='region')drawRegionMap();else drawLegacyVillage();return}if(worldView==='region')drawSurfaceRegion();else drawSurfaceVillage();positionSurfacePins();drawSurfaceMinimap()}finally{drawnVillages=previous}}
 function surfaceButton(icon,label,handler,primary=false){const b=document.createElement('button');b.type='button';b.innerHTML=surfaceIcon(icon)+'<span>'+label+'</span>';if(primary)b.className='primary';b.onclick=handler;return b}
 function surfaceToast(message){el('mapToast').textContent=message;el('mapToast').hidden=false;clearTimeout(surface.toastTimer);surface.toastTimer=setTimeout(()=>el('mapToast').hidden=true,3500)}
 function closeSurfaceInspector(){surface.roleFilter=null;surface.selection=null;surface.follow=null;surface.family=null;el('mapInspect').hidden=true;el('app').classList.remove('detail-open');updateSurfacePins();}
