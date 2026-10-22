@@ -18,6 +18,7 @@ jobs:
         with:
           node-version: '22'
       - name: Replay ten worlds for 180 days
+        shell: bash
         run: node tests/simulate.mjs | tee simulation-report.txt
       - name: Archive reproducible audit output
         if: always()

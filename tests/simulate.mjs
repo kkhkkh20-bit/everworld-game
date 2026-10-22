@@ -2,124 +2,81 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
-const SEEDS = [1, 7, 25, 51, 125, 1442, 1893, 4762, 8321, 9999];
-const HTML = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const match = HTML.match(/<script>([\s\S]*?)<\/script>/);
-assert.ok(match, 'Game script must be embedded in index.html');
-
+const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const source=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(
+  'window.__EVERWORLD__={',
+  'window.__REGION_AUDIT__={ensure:ensureWorld,trade:tradeVillages,campaign:launchCampaign,resolve:resolveCampaign,colony:foundWorldColony};window.__EVERWORLD__={'
+);
+const noop=()=>{};
+const context2d=new Proxy({measureText:value=>({width:String(value).length*7})},{get:(target,key)=>target[key]||noop});
 class Element {
-  constructor() {
-    this.children = [];
-    this.classList = { add() {}, remove() {}, toggle() {} };
-    this.nextElementSibling = { textContent: '' };
-    this.textContent = '';
-    this.clientWidth = 900;
-    this.clientHeight = 700;
-    this.dataset = {};
-  }
-  getContext() { return {}; }
-  append(...children) { this.children.push(...children); }
-  appendChild(child) { this.children.push(child); return child; }
-  replaceChildren(...children) { this.children = [...children]; }
-  addEventListener() {}
+  constructor(){this.children=[];this.dataset={};this.style={setProperty:noop};this.classList={add:noop,remove:noop,toggle:noop};this.textContent='';this.scrollTop=0;}
+  getContext(){return context2d;}
+  getBoundingClientRect(){return {width:900,height:570,left:0,top:0};}
+  append(...items){this.children.push(...items);}
+  appendChild(item){this.children.push(item);return item;}
+  replaceChildren(...items){this.children=items;}
+  querySelectorAll(){return [];}
+  setAttribute(){}
+  addEventListener(){}
+  focus(){}
 }
-
-const elements = new Map();
-const get = id => {
-  if (!elements.has(id)) elements.set(id, new Element());
-  return elements.get(id);
+const elements=new Map(),storage=new Map();
+const document={
+  getElementById(id){if(!elements.has(id))elements.set(id,new Element());return elements.get(id);},
+  createElement:()=>new Element(),createTextNode:value=>({textContent:value}),
+  querySelectorAll:()=>[],querySelector:()=>null,addEventListener:noop
 };
-const doc = {
-  getElementById: get,
-  createElement: () => new Element(),
-  querySelector: () => new Element(),
-  querySelectorAll: () => []
-};
-const window = { innerHeight: 844, devicePixelRatio: 1, addEventListener() {} };
-const ctx = {
-  document: doc, window,
-  performance: { now: () => 100 },
-  localStorage: { getItem: () => null, setItem() {} },
-  requestAnimationFrame() {},
-  console
-};
-vm.runInNewContext(match[1], ctx, { filename: 'index.html', timeout: 30000 });
-const game = window.__EVERWORLD__;
-assert.ok(game, 'Game should initialize and expose simulation controls');
+const window={innerHeight:844,innerWidth:1440,devicePixelRatio:1,addEventListener:noop};
+vm.runInNewContext(source,{document,window,localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},requestAnimationFrame:noop,setInterval:()=>1,clearInterval:noop,setTimeout:noop,clearTimeout:noop,performance:{now:()=>0},console},{filename:'index.html',timeout:30000});
+const game=window.__EVERWORLD__,region=window.__REGION_AUDIT__;
+assert.ok(game?.step,'Current simulation API must initialize');
 
-function snapshot(seed, day, prev) {
-  const s = game.getState();
-  const residents = game.getNPCs().filter(n => n.alive);
-  const aliveIds = new Set(residents.map(n => n.id));
-  const holders = s.seats.filter(st => st.holder !== null).map(st => st.holder);
-  assert.equal(s.day, day + 1, 'World clock must advance one day per 24 ticks');
-  assert.equal(s.pop, residents.length, 'Population must agree with resident list');
-  assert.equal(new Set(holders).size, holders.length, 'Office holders must be unique');
-  assert.ok(holders.every(id => aliveIds.has(id)), 'Deceased or emigrated NPC cannot hold office');
-  assert.ok(residents.filter(n => n.role === '왕').length <= 1, 'Multiple living kings');
-  assert.ok(residents.every(n => n.gold >= 0 && Number.isFinite(n.gold) && Number.isFinite(n.hp)), 'Invalid NPC finances or health');
-  assert.ok(s.food >= 0 && s.market >= 0 && s.treasury >= 0, 'Negative public economic inventory');
-  assert.ok(s.food < 5000 && s.market < 20000, 'Runaway food or clearinghouse balance');
-  assert.ok(s.pop <= s.housingCapacity + 10, 'Population wildly above available housing');
-  assert.ok(s.deaths >= prev.deaths && s.arrivals >= prev.arrivals, 'Event counts must not decline');
-
-  return {
-    seed, day,
-    pop: s.pop, deaths: s.deaths, arrivals: s.arrivals,
-    departures: s.departures, food: s.food,
-    market: +s.market.toFixed(1), treasury: +s.treasury.toFixed(1),
-    residentGold: residents.reduce((sum, n) => sum + n.gold, 0),
-    houses: s.housingCapacity, vacant: s.seats.filter(x => !x.holder).length,
-    socialAid: s.socialSupport, loanMade: s.loansMade,
-    loanRepaid: s.loansRepaid, investment: s.investments,
-    shopsOpened: s.shopsOpened, guestNights: s.guestNights,
-    careerReferrals: s.jobReferrals, ageRange: 'annual'
-  };
+function inventory(){
+  const w=game.world();
+  assert.ok(Number.isFinite(w.food)&&w.food>=0,'Invalid communal food');
+  assert.ok(Math.abs(w.food-Object.values(w.products).reduce((a,b)=>a+b,0))<.01,'Food ledger mismatch');
+  assert.ok([w.wood,w.stone,w.tools].every(n=>Number.isFinite(n)&&n>=0),'Invalid building supplies');
+  assert.ok(w.people.filter(n=>n.alive).every(n=>Number.isFinite(n.health)&&n.health>0&&Number.isFinite(n.age)),'Invalid living resident');
+  for(const v of w.region.villages)assert.ok([v.pop,v.food,v.wood,v.stone,v.soldiers].every(n=>Number.isFinite(n)&&n>=0),'Invalid neighboring settlement');
+  for(const owner of Object.values(w.region.owners))assert.ok(owner===0||w.region.villages.some(v=>v.id===owner),'Unknown land owner');
 }
-
-const all = [];
-for (const seed of SEEDS) {
-  game.reset(seed);
-  let previous = { deaths: 0, arrivals: 0 };
-  let elapsed = 0;
-  for (const day of [30, 90, 180]) {
-    game.advance((day - elapsed) * 24);
-    const record = snapshot(seed, day, previous);
-    all.push(record);
-    elapsed = day;
-    previous = record;
-  }
+const seeds=[1,7,25,51,125,1442,1893,4762,8321,9999];
+for(const seed of seeds){
+  game.reset(seed);game.pause();game.step(180);inventory();
+  assert.equal(game.world().day,181);assert.ok(game.world().region.villages.length>=4);
 }
+game.reset(1840);game.pause();const first=JSON.stringify(game.step(365));
+game.reset(1840);game.pause();assert.equal(JSON.stringify(game.step(365)),first,'Identical seeds must replay identically');
 
-function average(key, day) {
-  const group = all.filter(r => r.day === day);
-  return (group.reduce((n, r) => n + r[key], 0) / group.length).toFixed(1);
-}
+game.reset(1840);game.pause();game.step(365*10);inventory();
+assert.ok(game.world().stage>=1,'Productive settlement must unlock trade');
+assert.ok(game.world().development.level>=3,'Town development must be reachable');
+assert.ok(game.world().buildings.schools>=1&&game.world().education.sessions>0,'Schools must pass knowledge to children');
+assert.ok(game.world().region.villages.some(v=>v.pop>v.id*3+19),'Neighbors must grow on the shared calendar');
 
-console.log('SIMULATION AUDIT', new Date().toISOString());
-console.log('Seeds:', SEEDS.join(', '));
-console.log('day | population | deaths | food | market | resident gold | loans | loan repayment | vacancies');
-for (const day of [30, 90, 180]) {
-  console.log(
-    [day, '30/90/180'.includes(String(day)) ? average('pop',day) : '-',
-    average('deaths',day),average('food',day),
-    average('market',day),average('residentGold',day),
-    average('loanMade',day),average('loanRepaid',day),average('vacant',day)].join(' | ')
-  );
-}
-console.log('AUDIT RESULT: PASS (' + all.length + ' recorded checkpoints)');
+game.reset(1840);game.pause();
+let w=game.world(),r=region.ensure();r.relations['0:1']=30;
+const totals=()=>['food','wood','stone'].map(key=>w[key]+r.villages.reduce((sum,v)=>sum+v[key],0));
+const before=totals();assert.equal(region.trade(0,1,true),true);totals().forEach((value,i)=>assert.ok(Math.abs(value-before[i])<.001,'Barter must conserve inventory'));
+inventory();r.embargo.push(1);delete r.lastTrade['0:1'];assert.equal(region.trade(0,1),false,'Embargo must block barter');
 
-if (process.env.GITHUB_STEP_SUMMARY) {
-  const lines = [
-    '## Everworld: autonomous simulation audit',
-    '',
-    '10 fixed world seeds, 30 / 90 / 180 days per world. Values are model output, not empirical human-population benchmarks.',
-    '',
-    '| Day | Population | Deaths | Food | Market G | Residents G | Loans G | Repaid G | Vacancies |',
-    '|---:|---:|---:|---:|---:|---:|---:|---:|---:|'
-  ];
-  for (const day of [30,90,180]) {
-    lines.push('| ' + [day,'pop','deaths','food','market','residentGold','loanMade','loanRepaid','vacant'].map(x=>typeof x==='number'?x:average(x,day)).join(' | ') + ' |');
-  }
-  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
-}
+const parent=r.villages[0];parent.pop=70;parent.food=8000;parent.wood=200;parent.stone=100;parent.lastColony=-9999;
+const population=w.people.filter(n=>n.alive).length+r.villages.reduce((sum,v)=>sum+v.pop,0);
+assert.equal(region.colony(parent),true);
+assert.equal(w.people.filter(n=>n.alive).length+r.villages.reduce((sum,v)=>sum+v.pop,0),population,'Colonists must leave the parent settlement');
+
+game.reset(1840);game.pause();w=game.world();r=region.ensure();
+const rival=r.villages[0];rival.soldiers=2;rival.tech=0;rival.fort=0;
+r.owners['45,30']=0;r.owners['44,30']=1;
+const populationBefore=w.people.filter(n=>n.alive).length+rival.pop;
+assert.equal(region.campaign(0,1,true),'');const campaign=r.campaigns[0];w.day=campaign.arrives;region.resolve(campaign);
+assert.equal(r.battleCount,1);assert.ok(w.people.filter(n=>n.alive).length+rival.pop<populationBefore,'Combat must have actual casualties');
+assert.equal(r.owners['44,30'],0,'Border victory must transfer contested land');
+assert.ok(w.people.filter(n=>n.alive).every(n=>!n.campaignId),'Returned soldiers must resume civilian life');
+inventory();
+
+w.people.forEach(n=>n.alive=false);w.abandoned=true;const day=w.day;game.step(7);
+assert.equal(w.day,day+7,'Other civilizations must continue after the home settlement falls');
+assert.ok(r.villages.some(v=>v.pop>0));
+console.log('PASS: 10 seeded worlds, deterministic replay, development, education, shared world, conserved trade, colonization, combat and territorial consequences.');
