@@ -70,3 +70,11 @@ Diplomacy previews the exact conserved exchange from a shared read-only offer ca
 `node tests/play-review.cjs` performs actual touch navigation to diplomacy, executes and verifies conserved trade, checks cooldown feedback and a rejected campaign, skips 30 days and a calendar year, verifies the resulting comparisons and checks a dated history entry.
 
 The play-through also reproduced stale same-card results while paused: pointer/key hold protection deferred inspector updates during the click handler, but no later simulation tick refreshed the card. Releasing the tracked pointer/key now schedules a refresh after the activation event, preserving the pressed element and showing the completed action immediately even while paused. The trade/cooldown test exercises this path with the simulation timer stopped.
+
+## Resident-first view and quieter HUD
+
+The opening view and settlement entry now focus the densest real resident neighborhood at human scale rather than shrinking the whole village into a phone screen. Adult sprites use 40 logical pixels, and neighborhood zoom guarantees at least 40 CSS pixels for an adult at supported viewport sizes. The fit-map action remains an explicit overview; manual pan, zoom and person selection retain camera intent. Fresh residents begin at their actual assigned destinations, reducing overlapping spawn clusters. Existing resident identities and economic state remain intact.
+
+The HUD now uses compact dark controls and a light resident card, removing the repeated parchment/wood nine-slice frames. Village mini-map and floating building pins no longer cover the scene; buildings remain selectable directly on the map. The world map retains settlement labels and its mini-map. Touch targets and the separate clock/dock/control rail remain available.
+
+`node tests/life-ui.cjs` checks visible, human-scale residents in all five settlements across phone, landscape and desktop sizes, direct touch selection, simplified HUD styling and save identity preservation. `resident-visibility.cjs` checks whole-map visibility only after the explicit fit action. `map-surface.cjs` now selects buildings through actual canvas hit tests and expects the simplified controls.
