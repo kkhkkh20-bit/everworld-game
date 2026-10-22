@@ -46,3 +46,9 @@ Eight added occupations perform actual model work: loggers harvest timber, quarr
 The resident inspector's “직업” action opens a categorized roster with real counts. Career training uses the same livelihood, production and community categories. Leadership and childhood appear in the roster but are not ordinary training choices. Neighbor sprites continue to represent aggregate settlement activity, rather than fabricated individual records.
 
 Run `node tests/professions.cjs` with Playwright to verify starting scale, parents, actual profession output, food conservation, roster selection, career training and mobile input. Optionally set `EVERWORLD_LEGACY_HTML` to a previous index.html to verify that an old save's population, resources and identities survive loading.
+
+## Button reachability review
+
+The inspector now reserves the right-side map-control rail instead of covering zoom, fit and help controls. Narrow landscape layouts reserve separate space for the card, rail, clock and dock; redundant resource/minimap overlays are hidden there. Close and occupation controls use 44 px touch targets. Hidden map pins explicitly use display:none so the authored flex style cannot resurrect off-screen controls.
+
+`node tests/button-reachability.cjs` checks all persistent clock, dock and map-control hit targets with six inspector types at six viewport sizes, then uses real touch to zoom, open help, close cards, skip 30 days and select a career after scrolling. The existing time-controls audit separately checks 24x, pause, long-skip cancellation and exact calendar advancement.

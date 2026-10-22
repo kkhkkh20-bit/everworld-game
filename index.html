@@ -256,6 +256,11 @@ html,body{background:#739b66}#app{max-width:none;min-height:0;background:#739b66
 
 .career-tabs{display:flex;gap:5px;padding:0 8px 8px}#mapHud .career-tabs button{flex:1;min-height:44px;border:4px solid transparent;border-image:var(--ui-button) 5 fill stretch;background:transparent;color:#765333;font-size:11px}#mapHud .career-tabs button.active{border-image-source:var(--ui-wood);color:#fff0d0}.career-grid{grid-template-columns:repeat(3,minmax(0,1fr));padding:0 8px 8px;gap:5px}#mapHud .career-grid button{font-size:10px!important;min-height:44px;padding:5px 1px}.career-grid button:disabled{opacity:.4}
 #mapInspect .inspect-roster{width:32px;min-width:32px;height:36px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#8a674b;font-size:9px}#mapInspect .inspect-roster svg{width:16px;height:16px}
+/* Keep the inspector clear of the map-control rail, including touch layouts. */
+#mapPins button[hidden]{display:none!important}
+#mapInspect .inspect-close,#mapInspect .inspect-roster{width:44px;min-width:44px;height:44px;touch-action:manipulation}
+@media(max-width:620px){#mapInspect{right:76px!important;max-width:none}.inspect-top{gap:6px}.inspect-portrait{width:48px!important}#mapHud:has(#mapInspect:not([hidden])) .map-minimap{visibility:hidden}}
+@media(max-width:620px) and (max-height:500px){.map-resources,.map-minimap,.map-caption{display:none}#mapInspect{top:80px!important;bottom:164px;max-height:calc(100dvh - 244px);right:224px!important}#mapHud .map-zoom{display:flex;top:86px;bottom:auto;right:14px}}
 </style>
 </head>
 <body>
@@ -2171,7 +2176,7 @@ function showSurfaceInspect(type,key,x=450,y=285){surface.inspectorPosition=null
 function positionSurfaceInspector(){if(!surface?.selection)return;let {x,y}=surface.selection;if(surface.selection.type==='person'){const n=find(surface.selection.key);if(n?.alive){x=n.fx;y=n.fy}}if(surface.selection.type==='settlement'){const v=regionVillage(surface.selection.key);x=450+(v.tx*12+6-worldCamera.x)*worldCamera.zoom;y=285+(v.ty*12+6-worldCamera.y)*worldCamera.zoom}else if(worldView==='village'&&!['history','settings','time','help','war','diplomacy'].includes(surface.selection.type)){[x,y]=localToScreen(x,y)}
  const [px,py]=mapViewPoint(x,y),b=canvas.getBoundingClientRect(),box=el('mapInspect'),small=b.width<=620,short=b.height<=500&&!small,top=short?80:90,bottom=short?100:b.width<=1100?184:110;
  if(!small)box.style.maxHeight=Math.max(100,b.height-top-bottom)+'px';const height=box.getBoundingClientRect().height,anchor=surface.inspectorPosition;if(anchor&&anchor.width===b.width&&anchor.height===b.height){if(!small){anchor.top=Math.min(anchor.top,Math.max(top,b.height-bottom-height));box.style.top=anchor.top+'px'}return}
- surface.inspectorPosition={width:b.width,height:b.height,top:clip(py-90,top,Math.max(top,b.height-bottom-height))};box.style.left=(short?14:clip(px+28,14,Math.max(14,b.width-310)))+'px';box.style.top=clip(py-90,top,Math.max(top,b.height-bottom-height))+'px';
+ surface.inspectorPosition={width:b.width,height:b.height,top:clip(py-90,top,Math.max(top,b.height-bottom-height))};box.style.left=(short?14:clip(px+28,14,Math.max(14,b.width-380)))+'px';box.style.top=clip(py-90,top,Math.max(top,b.height-bottom-height))+'px';
 }
 
 function commitSurfaceInspector(target,fresh,subject){
