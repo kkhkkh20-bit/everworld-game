@@ -19,3 +19,12 @@ Kenney Tiny Town buildings/terrain, Tiny Dungeon human sprites, Pixel Adventure 
 `node tests/simulate.mjs` runs the existing deterministic model audit.
 
 For the optional browser audit, install Playwright and Chromium (`npm install --no-save playwright` and `npx playwright install chromium`), then run `node tests/map-surface.cjs`. A system Chromium can be supplied via `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. The audit checks actual map hit tests, all settlement entrances, real training and conserved trade, long-skip cancellation, drag and native touch zoom, responsive layouts and save/reload. Screenshots default to a temporary directory; set `EVERWORLD_TEST_ARTIFACTS` to choose a location.
+
+## Time controls and input fixes
+
+- The clock occupies reserved screen space above map popups; its buttons have a minimum 44 × 44 px target. Tablet/landscape layouts keep the clock and map dock apart.
+- Skip opens a dedicated panel with 30-day, 1-year, 10-year and 100-year choices. The map clock, progress notice and time panel provide cancellation during long skips. Progress notices have intrinsic height and do not intercept the map behind them.
+- A 50 ms clock accumulates elapsed time at `speed / 700` simulated days per millisecond, with bounded batches for input responsiveness. The old 24x path advanced only two days per 150 ms (about 9.33x). Paused/skip intervals do not accumulate catch-up time.
+- Map pin identities and unchanged inspector actions persist across simulation renders. Pressed/focused controls are preserved, and Space/Enter on buttons retain their normal keyboard behavior. An opened inspector stays in place instead of following a moving resident underneath the pointer. The canvas framebuffer is only resized when dimensions change.
+
+Run `node tests/time-controls.cjs` after installing Playwright as above. It checks real touch input while resident cards are open across six viewport sizes, held actions across fast ticks, pause and cancellation, exact 1x/6x/24x clock advancement, and leap-year calendar skipping.
