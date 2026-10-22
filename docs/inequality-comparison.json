@@ -1,0 +1,58 @@
+[
+  {
+    "seed": 7,
+    "years": 5,
+    "policy": "baseline",
+    "start": {
+      "day": 1,
+      "gini": 0.59,
+      "landless": 31,
+      "wealthy": 11,
+      "poor": 16,
+      "households": 42,
+      "top": 33,
+      "enslaved": 0
+    },
+    "end": {
+      "day": 1826,
+      "gini": 0.57,
+      "landless": 17,
+      "wealthy": 7,
+      "poor": 12,
+      "households": 36,
+      "top": 41,
+      "enslaved": 0
+    },
+    "starved": 0,
+    "defaults": 17,
+    "contracts": 80
+  },
+  {
+    "seed": 7,
+    "years": 5,
+    "policy": "bondage-and-wage-discrimination",
+    "start": {
+      "day": 1,
+      "gini": 0.59,
+      "landless": 31,
+      "wealthy": 11,
+      "poor": 16,
+      "households": 42,
+      "top": 33,
+      "enslaved": 0
+    },
+    "end": {
+      "day": 1826,
+      "gini": 0.59,
+      "landless": 21,
+      "wealthy": 8,
+      "poor": 18,
+      "households": 40,
+      "top": 40,
+      "enslaved": 0
+    },
+    "starved": 0,
+    "defaults": 24,
+    "contracts": 89
+  }
+]
