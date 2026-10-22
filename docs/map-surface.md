@@ -12,7 +12,7 @@ The individual-resident model still belongs to the original settlement. Other se
 
 ## Assets
 
-Kenney Tiny Town tiles and Lucide icons are embedded directly, without runtime CDN requests. See [third-party notices](../THIRD_PARTY_ASSETS.md). Simulation code and save migration remain in index.html.
+Kenney Tiny Town buildings/terrain, Tiny Dungeon human sprites, Pixel Adventure UI frames/buttons and Lucide icons are embedded directly, without runtime CDN requests. Map residents and card portraits use the same sprite; parchment/wood UI pieces use nine-slice borders. See [third-party notices](../THIRD_PARTY_ASSETS.md). Simulation code and save migration remain in index.html.
 
 ## Validation
 
