@@ -170,7 +170,7 @@ main{position:relative;grid-template-columns:minmax(0,1fr) 350px}
  .recent-events{bottom:10px;width:calc(100% - 16px);max-width:330px}
 }
 @media(max-width:760px) and (max-height:720px){
- .portrait-stage{height:100px}.card-heading strong{font-size:18px}.card-top{height:21px}
+ .portrait-stage{height:80px}.card-heading strong{font-size:18px}.card-top{height:21px}
  .character-card{max-width:240px;padding:5px;border-width:2px}
  .card-heading{padding:4px}.card-body{padding:5px 8px}
  .card-goal{margin-top:5px}.trait-tags{margin-bottom:4px}
@@ -179,6 +179,7 @@ main{position:relative;grid-template-columns:minmax(0,1fr) 350px}
 }
 
 @media(max-width:760px) and (max-height:620px){.side{position:fixed;top:0;bottom:47px}.portrait-stage{height:73px}.card-body{padding:4px 8px}.card-goal{margin-top:4px}}
+.action-card .motion-activity{display:block;color:#c9cfb1;font-size:10px;line-height:1.4;margin-top:4px}.action-card b{font-size:10px}
 </style>
 </head>
 <body>
@@ -949,6 +950,80 @@ function load(){try{const raw=JSON.parse(localStorage.getItem('everworld_v28_hum
 const zones={castle:[.72,.18],fields:[.18,.64],forest:[.16,.20],home:[.69,.68],watch:[.85,.38],workshop:[.47,.77],building:[.5,.53],market:[.52,.40],pasture:[.57,.56],orchard:[.37,.38],river:[.36,.82]};
 function rect(x,y,w,h,fill){ctx.fillStyle=fill;ctx.fillRect(x,y,w,h)}function text(s,x,y,size=13,color='#e8e5d3'){ctx.fillStyle=color;ctx.font=`bold ${size}px system-ui`;ctx.textAlign='center';ctx.fillText(s,x,y)}
 // Pixel artwork uses fixed coordinates and never consumes the simulation RNG.
+// Presentation state is separate from saved simulation decisions and production.
+let motionWorld=null,motionClock=0,lastFrameTime=0;
+const journeys=new Map();
+const placeNames={castle:'마을 회관',fields:'남쪽 밭',forest:'숲',home:'집',watch:'초소',workshop:'목재 작업장',building:'건설 현장',market:'교환터',pasture:'목초지',orchard:'과수원',river:'강가',apiary:'벌통'};
+const walkingLinks=[['castle','building'],['building','fields'],['building','home'],['building','forest'],['building','watch'],['building','workshop'],['building','pasture'],['building','orchard'],['orchard','apiary'],['workshop','river'],['building','market']];
+function walkingNodes(){return {...Object.fromEntries(Object.entries(zones).map(([k,v])=>[k,[v[0]*900,v[1]*570]])),apiary:[418,238]}}
+function destinationFor(n){
+ let site=n.site in zones?n.site:chooseSite(n);if(site==='orchard'&&n.role==='beekeeper')site='apiary';
+ let point=walkingNodes()[site].slice(),name=placeNames[site];
+ if(site==='home'){
+  const h=household(n.householdId);
+  if(h?.settlementId){point=h.settlementId===1?[790,240]:[805,440];name='취락의 집'}
+  else if(Number.isInteger(h?.homeIndex)&&h.homeIndex>=0&&h.homeIndex<10){const i=h.homeIndex;point=[593+(i%4)*67,381+Math.floor(i/4)*67]}
+ }else if(site==='fields'&&W.fields?.length){
+  const owned=W.fields.findIndex(f=>f.ownerHouseholdId===n.householdId),i=owned>=0?owned:n.id%Math.min(14,W.fields.length);
+  point=[44+(i%7)*47,344+Math.floor(i/7)*72];name='남쪽 '+(i+1)+'번 밭';
+ }else{point[0]+=(n.id%5-2)*7;point[1]+=(n.id%3-1)*6}
+ return {site,point,name,action:n.action||'생활'};
+}
+function routeTo(n,destination){
+ const nodes=walkingNodes(),keys=Object.keys(nodes),distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+ const start=keys.reduce((a,b)=>distance(nodes[a],[n.fx,n.fy])<distance(nodes[b],[n.fx,n.fy])?a:b);
+ const costs=Object.fromEntries(keys.map(k=>[k,Infinity])),previous={},todo=new Set(keys);costs[start]=0;
+ while(todo.size){
+  const current=[...todo].reduce((a,b)=>costs[a]<costs[b]?a:b);todo.delete(current);if(current===destination.site)break;
+  for(const [a,b] of walkingLinks){const next=a===current?b:b===current?a:null;if(!next||!todo.has(next))continue;const cost=costs[current]+distance(nodes[current],nodes[next]);if(cost<costs[next]){costs[next]=cost;previous[next]=current}}
+ }
+ const path=[destination.site];while(path[0]!==start&&previous[path[0]])path.unshift(previous[path[0]]);
+ return [...path.map(k=>nodes[k].slice()),destination.point.slice()];
+}
+function motionFor(n){
+ if(motionWorld!==W){motionWorld=W;journeys.clear();motionClock=0}
+ let m=journeys.get(n.id);
+ if(!m){
+  const d=destinationFor(n);
+  if(!Number.isFinite(n.fx)||!Number.isFinite(n.fy)||(n.fx<=1&&n.fy<=1)){n.fx=d.point[0];n.fy=d.point[1]}
+  m={...d,phase:'working',points:[],holdUntil:motionClock+3};journeys.set(n.id,m);
+  if(Math.hypot(n.fx-d.point[0],n.fy-d.point[1])>18){m.phase='moving';m.points=routeTo(n,d)}
+ }
+ return m;
+}
+function advanceJourneys(dt){
+ if(paused||W.abandoned)return;
+ const live=people(),ids=new Set(live.map(n=>n.id));for(const id of journeys.keys())if(!ids.has(id))journeys.delete(id);
+ const visualSpeed=Math.min(2,Math.sqrt(speed));motionClock+=dt;visualTime+=dt*60;
+ for(const n of live){
+  const m=motionFor(n),wanted=destinationFor(n);
+  const urgent=wanted.site==='home'&&(n.health<22||n.energy<12);
+  if((m.phase==='working'&&motionClock>=m.holdUntil)||(urgent&&m.site!=='home')){
+   if(wanted.site!==m.site){Object.assign(m,wanted,{phase:'moving',points:routeTo(n,wanted)})}
+   else{m.action=wanted.action;m.holdUntil=motionClock+3}
+  }
+  if(m.phase!=='moving')continue;
+  let budget=dt*35*visualSpeed;
+  while(budget>0&&m.points.length){
+   const [x,y]=m.points[0],dx=x-n.fx,dy=y-n.fy,distance=Math.hypot(dx,dy);
+   if(distance<=budget){n.fx=x;n.fy=y;budget-=distance;m.points.shift()}
+   else{n.fx+=dx/distance*budget;n.fy+=dy/distance*budget;budget=0}
+  }
+  if(!m.points.length){m.phase='working';m.holdUntil=motionClock+3.5}
+ }
+}
+function motionStatus(n){const m=motionFor(n);return m.phase==='moving'?'→ '+m.name+'으로 이동 중':m.name+' · '+(m.site==='home'?'생활·휴식 중':'작업 중')}
+function updateMotionCard(){
+ const n=find(selection),status=el('motionStatus'),activity=el('motionActivity');if(!n?.alive||!status)return;
+ const m=motionFor(n),label=motionStatus(n),detail=(m.phase==='moving'?'도착 후 · ':'')+m.action;
+ if(status.textContent!==label)status.textContent=label;if(activity&&activity.textContent!==detail)activity.textContent=detail;
+}
+function drawJourney(n){
+ const m=motionFor(n);if(m.phase!=='moving')return;
+ ctx.save();ctx.strokeStyle='#ffe9a1';ctx.lineWidth=2;ctx.setLineDash([4,6]);ctx.beginPath();ctx.moveTo(n.fx,n.fy);for(const [x,y] of m.points)ctx.lineTo(x,y);ctx.stroke();ctx.setLineDash([]);
+ const [x,y]=m.point;ctx.strokeRect(Math.round(x)-9,Math.round(y)-9,18,18);text('목적지',x,y-15,10,'#fff0b9');ctx.restore();
+}
+
 function tree(x,y){
  x=Math.round(x/2)*2;y=Math.round(y/2)*2;
  rect(x-17,y+9,36,6,'#385e4180');rect(x-3,y-2,7,20,'#6d5438');rect(x,y,3,15,'#987348');
@@ -977,7 +1052,7 @@ function house(x,y,i=0,kind='home'){
 }
 function pixelPerson(n,x,y){
  x=Math.round(x/2)*2;y=Math.round(y/2)*2;
- const moving=Math.abs((zones[n.site]||zones.home)[0]*900+((n.id*47)%101-50)*.65-x)>5,walk=moving&&Math.floor(visualTime/10+n.id)%2?2:0;
+ const moving=motionFor(n).phase==='moving',walk=moving&&Math.floor(visualTime/10+n.id)%2?2:0;
  rect(x-7,y+9,16,4,'#294a3c66');rect(x-4,y+3,4,7+walk,'#4b4d3a');rect(x+2,y+3,4,9-walk,'#4b4d3a');
  rect(x-5,y+9+walk,5,2,'#493d32');rect(x+2,y+10-walk,5,2,'#493d32');
  rect(x-6,y-7,13,13,palette[n.role]||'#b4a077');rect(x-6,y+3,13,2,'#766944');
@@ -986,6 +1061,7 @@ function pixelPerson(n,x,y){
  rect(x+2,y-12,2,2,'#394538');rect(x+1,y-7,3,2,'#f1d5a0');
  if(['farmer','gardener'].includes(n.role)){rect(x-8,y-18,18,3,'#d7b967');rect(x-4,y-22,10,4,'#c9aa5c');rect(x+9,y-3,2,15,'#8b7346');rect(x+6,y-5,8,2,'#bcb69a')}
  if(n.role==='chief'){rect(x-5,y-21,12,3,'#e3c56d');rect(x-4,y-24,3,4,'#e3c56d');rect(x+3,y-24,3,4,'#e3c56d')}
+ if(!moving){const m=motionFor(n);rect(x+9,y-20,10,11,'#294337');if(m.site==='home'){text('Z',x+14,y-12,8,'#e2d8ad')}else{rect(x+13,y-18,2,7,'#dfc779');rect(x+10,y-17,3,2,'#b4c577');rect(x+15,y-15,3,2,'#b4c577')}}
  if(n.id===selection){ctx.strokeStyle='#fff0a4';ctx.lineWidth=2;ctx.strokeRect(x-11,y-26,24,41);rect(x-2,y-33,6,3,'#fff0a4');rect(x,y-30,2,2,'#fff0a4')}
 }
 function drawWorld(){
@@ -1008,12 +1084,12 @@ function drawWorld(){
  }
  for(let i=0;i<95;i++){const x=(i*89)%900,y=514+(i*17)%56;rect(x,y,10+(i%4)*4,2,i%3?'#74a4a1':'#a4c4b1')}
  // Paths are laid down as small blocks rather than smooth vector strokes.
- const paths=[['castle','building'],['building','fields'],['building','home'],['building','forest'],['building','watch'],['building','workshop']];
+ const paths=walkingLinks;const roadZones={...zones,apiary:[418/900,238/570]};
  for(let layer=0;layer<2;layer++)for(const [a,b] of paths){
-  const from=zones[a],to=zones[b],dx=(to[0]-from[0])*900,dy=(to[1]-from[1])*570,steps=Math.ceil(Math.hypot(dx,dy)/5);
+  const from=roadZones[a],to=roadZones[b],dx=(to[0]-from[0])*900,dy=(to[1]-from[1])*570,steps=Math.ceil(Math.hypot(dx,dy)/5);
   for(let i=0;i<=steps;i++){const x=Math.round((from[0]*900+dx*i/steps)/4)*4,y=Math.round((from[1]*570+dy*i/steps)/4)*4;rect(x-(layer?10:12),y-(layer?7:9),layer?20:24,layer?14:18,layer?'#c5b780':'#9e9569')}
  }
- for(const [a,b] of paths){const from=zones[a],to=zones[b];for(let i=1;i<15;i++){const x=Math.round((from[0]+(to[0]-from[0])*i/15)*450)*2,y=Math.round((from[1]+(to[1]-from[1])*i/15)*285)*2;rect(x+(i%3)*2-2,y,4,2,'#afa273')}}
+ for(const [a,b] of paths){const from=roadZones[a],to=roadZones[b];for(let i=1;i<15;i++){const x=Math.round((from[0]+(to[0]-from[0])*i/15)*450)*2,y=Math.round((from[1]+(to[1]-from[1])*i/15)*285)*2;rect(x+(i%3)*2-2,y,4,2,'#afa273')}}
  // Fenced fields follow the actual crop state.
  for(let i=0;i<Math.min(14,W.fields?.length||0);i++){
   const x=24+(i%7)*47,y=314+Math.floor(i/7)*72,plot=W.fields[i],ripe=plot.state==='ripe',growing=plot.state==='growing';
@@ -1050,15 +1126,11 @@ function drawWorld(){
  if(W.project){const x=548,y=256;for(let i=0;i<4;i++)rect(x+i*14,y,3,38,'#ac9061');rect(x-2,y+8,49,3,'#cfb57c');rect(x-2,y+30,49,3,'#cfb57c');text('건설 '+Math.round(W.project.progress/W.project.needed*100)+'%',570,250,10)}
  if(W.buildings.irrigation)for(let i=0;i<W.buildings.irrigation;i++)rect(65+i*26,318,4,132,'#79aaa1');
  for(const h of W.hamlets?.filter(h=>h.id>0)||[]){const pop=W.households.filter(x=>x.settlementId===h.id).reduce((a,b)=>a+householdMembers(b).length,0);for(let k=0;k<Math.min(3,Math.ceil(pop/4));k++)house(790+k*25,h.id===1?212:415,k)}
- // Use the same destinations and interpolation as the original simulation display.
- const inhabitants=people();for(const n of inhabitants){
-  const site=household(n.householdId)?.settlementId||0,[zx,zy]=n.site==='home'&&site===1?[.87,.37]:n.site==='home'&&site===2?[.88,.69]:(zones[n.site]||zones.home);
-  const targetX=zx*900+((n.id*47)%101-50)*.65,targetY=zy*570+((n.id*67)%87-43)*.55;n.fx+=(targetX-n.fx)*.09;n.fy+=(targetY-n.fy)*.09;
- }
+ const inhabitants=people();const followed=find(selection);if(followed?.alive)drawJourney(followed);
  for(const n of [...inhabitants].sort((a,b)=>a.fy-b.fy))pixelPerson(n,n.fx,n.fy);
  function chip(label,x,y){ctx.font='bold 10px system-ui';const w=ctx.measureText(label).width+16;rect(x-w/2,y-12,w,18,'#294334d9');text(label,x,y,10,'#efe2b2')}
  chip('곡물 창고',429,70);chip(W.abandoned?'버려진 회관':'마을 회관',650,44);chip('주거지',722,297);
- const selected=find(selection);if(selected?.alive){chip(selected.name+' · '+selected.action,clip(selected.fx,100,800),Math.max(48,selected.fy-38))}
+ const selected=find(selection);if(selected?.alive){chip(selected.name+' · '+motionStatus(selected),clip(selected.fx,100,800),Math.max(48,selected.fy-38))}
  if(W.timeIsNight)rect(0,0,900,570,'#17213855');
  if(W.abandoned){rect(0,0,900,570,'#1a1714a8');text('마을 멸망 — 이곳은 폐허가 되었다',450,278,25,'#ffe6ad')}
 }
@@ -1127,7 +1199,7 @@ function renderCompactProfile(n){
  const stats=make('div','card-stats'),food=make('span','','▥ 가구 식량'),wealth=make('span','','◇ 가구 자산');
  food.append(make('b','',Math.round(householdFood(h))));wealth.append(make('b','',Math.round(householdAssets(h))));wealth.title='식량·금화·토지·주택·가축을 합산한 내부 평가값';stats.append(food,wealth);body.append(stats);
  body.append(make('p','card-goal','목표 · '+n.goal));card.append(body);
- const action=make('div','action-card');action.append(make('b','','▶ '+(n.action||'생활')));card.append(action);root.append(card);
+ const action=make('div','action-card'),status=make('b','',motionStatus(n)),activity=make('small','motion-activity');status.id='motionStatus';activity.id='motionActivity';activity.textContent=motionFor(n).action;action.append(status,activity);card.append(action);root.append(card);
 }
 function paintPortrait(canvas,n){
  const c=canvas.getContext('2d'),r=(x,y,w,h,color)=>{c.fillStyle=color;c.fillRect(x,y,w,h)};
@@ -1202,7 +1274,7 @@ renderRecentEvents();if(tab==='people')renderPeople();else if(tab==='news')rende
 function switchTab(key){tab=key;el('app').classList.add('card-opened');for(const k of ['people','news','economy','families','politics','laws']){el(k==='economy'?'ecoPanel':k+'Panel').hidden=k!==key;el('tab-'+k).classList.toggle('active',k===key)}render()}
 function canvasClick(ev){const r=canvas.getBoundingClientRect();const scale=Math.min(r.width/900,r.height/570),x=(ev.clientX-r.left-(r.width-900*scale)/2)/scale,y=(ev.clientY-r.top-(r.height-570*scale)/2)/scale;if(x<0||x>900||y<0||y>570)return;let nearest=null,best=1e9;for(const n of people()){const dist=Math.hypot(n.fx-x,n.fy-y);if(dist<best){best=dist;nearest=n}}if(nearest&&best<45){selection=nearest.id;page=Math.floor(people().findIndex(n=>n.id===selection)/(window.innerHeight>850?7:5));switchTab('people')}}
 function setSpeed(v){speed=v;paused=false;el('pause').textContent='일시정지';el('pause').classList.remove('active');for(const b of document.querySelectorAll('[data-speed]'))b.classList.toggle('active',Number(b.dataset.speed)===v);startClock()}
-function frame(){if(!W)return;visualTime++;drawWorld();requestAnimationFrame(frame)}
+function frame(now){if(!W)return;const dt=lastFrameTime?Math.min(.05,(now-lastFrameTime)/1000):0;lastFrameTime=now;advanceJourneys(dt);drawWorld();updateMotionCard();requestAnimationFrame(frame)}
 function startClock(){if(timer)clearInterval(timer);timer=setInterval(()=>{if(!paused&&!W.abandoned){const steps=speed>=24?2:1;for(let i=0;i<steps;i++)dailyStep();render()}},speed>=24?150:700/speed)}
 function skipDays(days){if(!W)return;for(let i=0;i<days&&!W.abandoned;i++)dailyStep();save();render()}
 el('showCard').onclick=()=>switchTab('people');el('closeCard').onclick=()=>{el('app').classList.remove('card-opened');el('showCard').focus()};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.innerWidth<=760){el('app').classList.remove('card-opened');el('showCard').focus()}});
