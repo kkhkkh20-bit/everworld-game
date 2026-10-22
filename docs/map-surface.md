@@ -78,3 +78,13 @@ The opening view and settlement entry now focus the densest real resident neighb
 The HUD now uses compact dark controls and a light resident card, removing the repeated parchment/wood nine-slice frames. Village mini-map and floating building pins no longer cover the scene; buildings remain selectable directly on the map. The world map retains settlement labels and its mini-map. Touch targets and the separate clock/dock/control rail remain available.
 
 `node tests/life-ui.cjs` checks visible, human-scale residents in all five settlements across phone, landscape and desktop sizes, direct touch selection, simplified HUD styling and save identity preservation. `resident-visibility.cjs` checks whole-map visibility only after the explicit fit action. `map-surface.cjs` now selects buildings through actual canvas hit tests and expects the simplified controls.
+
+## Living survivors and native canvas rendering
+
+A legacy extinction path set `abandoned` with up to three people still alive. That stopped both home daily simulation and resident movement, while the HUD continued to show those people and neighboring-world time kept advancing. Loading such a save now reconciles the flag without changing identities, population, date, stock or RNG. A settlement with living residents remains a crisis settlement; extinction occurs at zero living residents. The repair records its correction and retains the legacy ruin reason separately. Visual movement no longer depends on a stale abandonment flag, and the ruin tint requires zero population.
+
+Residents can take bounded local steps at home, civic and workshop destinations as well as fields/forest sites. These display-only steps preserve the actual home/work destination and do not add economic work. Pause still freezes every actor.
+
+Active village/world canvases now allocate the framebuffer from the current CSS bounds and device pixel ratio, then draw the existing 900 × 570 logical cover projection into that native buffer with smoothing disabled. CSS no longer stretches a fixed-size framebuffer; hit testing retains the same logical projection. Painting is capped at 30 fps while motion integrates separately. The animation loop schedules the next frame in a finally block so a transient render error cannot permanently terminate animation.
+
+`node tests/survivor-motion.cjs` optionally accepts `EVERWORLD_LEGACY_HTML` and builds the screenshot's 1871 / three-survivor contradictory save through the previous game. It verifies preserved identity/resources/date/RNG, movement while the economy clock is stopped, pause, crisis versus true extinction and native 3× framebuffer dimensions.
