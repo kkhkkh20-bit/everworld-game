@@ -28,3 +28,11 @@ For the optional browser audit, install Playwright and Chromium (`npm install --
 - Map pin identities and unchanged inspector actions persist across simulation renders. Pressed/focused controls are preserved, and Space/Enter on buttons retain their normal keyboard behavior. An opened inspector stays in place instead of following a moving resident underneath the pointer. The canvas framebuffer is only resized when dimensions change.
 
 Run `node tests/time-controls.cjs` after installing Playwright as above. It checks real touch input while resident cards are open across six viewport sizes, held actions across fast ticks, pause and cancellation, exact 1x/6x/24x clock advancement, and leap-year calendar skipping.
+
+## Resident activity
+
+Original-settlement residents now take short, bounded steps within their actual work site after arrival, with pauses between tasks. Farm movement stays inside the assigned plot; long journeys retain their road route and speed cap. Work tools animate while time is running.
+
+Other settlements draw up to 64 visual representatives based on current population, homes, farms, schools and soldiers. They follow door-to-lane-to-work routes, work for a while, then return home. These are view-only actors rather than invented personal simulation records; selecting one opens aggregate population information. Visual actors are removed when population reaches zero, and other settlements remain animated after the original settlement is abandoned. Houses sit beside streets instead of directly on them.
+
+`node tests/resident-activity.cjs` checks workplace bounds, visible movement in all four neighboring villages, pause/resume, unchanged economy and random state, continued activity after the original settlement falls, and removal of ghost residents. It uses the Playwright setup described above.
