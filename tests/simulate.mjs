@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const source=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(
   'window.__EVERWORLD__={',
-  'window.__REGION_AUDIT__={ensure:ensureWorld,trade:tradeVillages,campaign:launchCampaign,resolve:resolveCampaign,colony:foundWorldColony};window.__EVERWORLD__={'
+  'window.__REGION_AUDIT__={ensure:ensureWorld,trade:tradeVillages,campaign:launchCampaign,resolve:advanceCampaign,faction:factionOf,military:militaryState,colony:foundWorldColony};window.__EVERWORLD__={'
 );
 const noop=()=>{};
 const context2d=new Proxy({measureText:value=>({width:String(value).length*7})},{get:(target,key)=>target[key]||noop});
@@ -67,12 +67,13 @@ assert.equal(region.colony(parent),true);
 assert.equal(w.people.filter(n=>n.alive).length+r.villages.reduce((sum,v)=>sum+v.pop,0),population,'Colonists must leave the parent settlement');
 
 game.reset(1840);game.pause();w=game.world();r=region.ensure();
-const rival=r.villages[0];rival.soldiers=2;rival.tech=0;rival.fort=0;
+const rival=r.villages[0];rival.soldiers=2;rival.tech=0;rival.fort=0;region.military(1).wall=0;region.military(1).hp=0;
 r.owners['45,30']=0;r.owners['44,30']=1;
 const populationBefore=w.people.filter(n=>n.alive).length+rival.pop;
 assert.equal(region.campaign(0,1,true),'');const campaign=r.campaigns[0];w.day=campaign.arrives;region.resolve(campaign);
 assert.equal(r.battleCount,1);assert.ok(w.people.filter(n=>n.alive).length+rival.pop<populationBefore,'Combat must have actual casualties');
-assert.equal(r.owners['44,30'],0,'Border victory must transfer contested land');
+assert.equal(region.faction(r.owners['44,30']),region.faction(0),'Victory must transfer contested land or conquer its settlement');
+assert.equal(campaign.phase,'return');w.day=campaign.arrives;region.resolve(campaign);
 assert.ok(w.people.filter(n=>n.alive).every(n=>!n.campaignId),'Returned soldiers must resume civilian life');
 inventory();
 
