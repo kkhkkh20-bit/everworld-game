@@ -60,3 +60,13 @@ Village entry, initial loading and map-fit now calculate the camera from the act
 The population indicator and resident dock locate actual people. Empty original settlements open their status and extinction history instead of silently doing nothing. Invalid or implausibly out-of-map saved display coordinates are repaired to the actual destination without adding people or altering resources. Neighbor actors also have an asset-loading fallback.
 
 `node tests/resident-visibility.cjs` checks that all residents or aggregate representatives fit on screen in all five villages across five viewport sizes, that touch selection zooms to a real person, that map-fit is restored, and that extinct villages explain their history without fabricating population. It also checks coordinate repair leaves resources, population and RNG unchanged.
+
+## Play-through feedback
+
+After a real mobile play-through with a calendar-year skip, time results now compare the observed settlement's actual resident and house counts and show changes in surviving world settlements plus battles during the skipped interval. These comparisons use the same settlement before and after the skip even if the observer changes views. The compact time panel keeps the result; completion notices clear after 2.5 seconds.
+
+Diplomacy previews the exact conserved exchange from a shared read-only offer calculation also used by the trade engine. Blocked trades state the actual cause (cooldown days, embargo, relations, dispute, ruin or insufficient exchange stock), with the unavailable button disabled. A rejected campaign shows its actual reason and retains the diplomacy card. History entries display full year/month/day instead of grouping everything under a year.
+
+`node tests/play-review.cjs` performs actual touch navigation to diplomacy, executes and verifies conserved trade, checks cooldown feedback and a rejected campaign, skips 30 days and a calendar year, verifies the resulting comparisons and checks a dated history entry.
+
+The play-through also reproduced stale same-card results while paused: pointer/key hold protection deferred inspector updates during the click handler, but no later simulation tick refreshed the card. Releasing the tracked pointer/key now schedules a refresh after the activation event, preserving the pressed element and showing the completed action immediately even while paused. The trade/cooldown test exercises this path with the simulation timer stopped.
