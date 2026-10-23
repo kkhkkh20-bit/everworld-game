@@ -1,0 +1,325 @@
+{
+  "environment": "Chromium / Linux, 390x844 viewport, CPU throttle 4x, seed 1840; mature save approximately five years / twelve towns",
+  "measurement": "Sequential isolated runs, each phase requested 4 seconds; main-thread stalls can extend actual sampling duration. p95 is rAF callback interval, not canvas FPS. Single-run shared-host measurements are variable.",
+  "before": [
+    {
+      "mode": "paused-world",
+      "day": 1,
+      "p95FrameMs": 233,
+      "frames": 41,
+      "functions": {
+        "drawSurfaceRegion": {
+          "calls": 39,
+          "ms": 1123.1999999918044,
+          "max": 95.5
+        },
+        "positionSurfacePins": {
+          "calls": 39,
+          "ms": 625.8000000044703,
+          "max": 57.90000000037253
+        },
+        "drawSurfaceMinimap": {
+          "calls": 39,
+          "ms": 369.40000000037253,
+          "max": 83.90000000037253
+        },
+        "drawWorld": {
+          "calls": 39,
+          "ms": 2133.699999999255,
+          "max": 184.2999999988824
+        }
+      }
+    },
+    {
+      "mode": "24x-world",
+      "day": 6,
+      "p95FrameMs": 7766,
+      "frames": 8,
+      "functions": {
+        "drawSurfaceRegion": {
+          "calls": 14,
+          "ms": 1267.4999999981374,
+          "max": 565.7999999988824
+        },
+        "positionSurfacePins": {
+          "calls": 19,
+          "ms": 2170.9000000003725,
+          "max": 1189.699999999255
+        },
+        "drawSurfaceMinimap": {
+          "calls": 14,
+          "ms": 1071.1000000014901,
+          "max": 852.8000000007451
+        },
+        "drawWorld": {
+          "calls": 14,
+          "ms": 4309.400000004098,
+          "max": 1251.7000000011176
+        },
+        "renderPeople": {
+          "calls": 5,
+          "ms": 250.80000000074506,
+          "max": 144
+        },
+        "observerRows": {
+          "calls": 10,
+          "ms": 9.599999999627471,
+          "max": 5.400000000372529
+        },
+        "render": {
+          "calls": 5,
+          "ms": 1814.699999999255,
+          "max": 1332.699999999255
+        }
+      }
+    },
+    {
+      "mode": "24x-village",
+      "day": 17,
+      "p95FrameMs": 1033,
+      "frames": 9,
+      "functions": {
+        "positionSurfacePins": {
+          "calls": 28,
+          "ms": 222.59999999590218,
+          "max": 29.40000000037253
+        },
+        "drawSurfaceMinimap": {
+          "calls": 19,
+          "ms": 265.19999999925494,
+          "max": 69.5
+        },
+        "drawWorld": {
+          "calls": 19,
+          "ms": 1376.7000000011176,
+          "max": 305.5
+        },
+        "renderPeople": {
+          "calls": 9,
+          "ms": 262.39999999664724,
+          "max": 94.20000000111759
+        },
+        "observerRows": {
+          "calls": 9,
+          "ms": 15.900000000372529,
+          "max": 8.900000000372529
+        },
+        "render": {
+          "calls": 9,
+          "ms": 1582.2000000011176,
+          "max": 643.9000000003725
+        }
+      }
+    }
+  ],
+  "after": [
+    {
+      "mode": "paused-world",
+      "day": 1,
+      "p95FrameMs": 17,
+      "frames": 236,
+      "functions": {}
+    },
+    {
+      "mode": "24x-world",
+      "day": 22,
+      "p95FrameMs": 517,
+      "frames": 26,
+      "functions": {
+        "drawSurfaceRegion": {
+          "calls": 38,
+          "ms": 1569.5000000037253,
+          "max": 337.90000000037253
+        },
+        "positionSurfacePins": {
+          "calls": 51,
+          "ms": 322.90000000037253,
+          "max": 26.90000000037253
+        },
+        "drawWorld": {
+          "calls": 38,
+          "ms": 1649.1000000052154,
+          "max": 339.2999999988824
+        },
+        "observerRows": {
+          "calls": 26,
+          "ms": 31.49999999627471,
+          "max": 4.399999998509884
+        },
+        "render": {
+          "calls": 13,
+          "ms": 1474.300000000745,
+          "max": 373.5
+        }
+      }
+    },
+    {
+      "mode": "24x-village",
+      "day": 47,
+      "p95FrameMs": 300,
+      "frames": 23,
+      "functions": {
+        "positionSurfacePins": {
+          "calls": 52,
+          "ms": 206.40000000409782,
+          "max": 19.09999999962747
+        },
+        "drawWorld": {
+          "calls": 38,
+          "ms": 1302.6000000033528,
+          "max": 61.20000000111759
+        },
+        "observerRows": {
+          "calls": 14,
+          "ms": 24.50000000372529,
+          "max": 10.300000000745058
+        },
+        "render": {
+          "calls": 14,
+          "ms": 753.2000000011176,
+          "max": 79.20000000111759
+        }
+      }
+    }
+  ],
+  "matureAfter": [
+    {
+      "mode": "paused-world",
+      "day": 1826,
+      "p95FrameMs": 17,
+      "frames": 197,
+      "functions": {}
+    },
+    {
+      "mode": "24x-world",
+      "day": 1836,
+      "p95FrameMs": 667,
+      "frames": 12,
+      "functions": {
+        "drawSurfaceRegion": {
+          "calls": 23,
+          "ms": 1334.199999999255,
+          "max": 232.69999999925494
+        },
+        "positionSurfacePins": {
+          "calls": 33,
+          "ms": 209.69999999925494,
+          "max": 29.59999999962747
+        },
+        "drawWorld": {
+          "calls": 23,
+          "ms": 1368.699999999255,
+          "max": 234.90000000037253
+        },
+        "observerRows": {
+          "calls": 20,
+          "ms": 23.900000002235174,
+          "max": 4.300000000745058
+        },
+        "render": {
+          "calls": 10,
+          "ms": 1142.8999999985099,
+          "max": 273.19999999925494
+        }
+      }
+    },
+    {
+      "mode": "24x-village",
+      "day": 1856,
+      "p95FrameMs": 283,
+      "frames": 21,
+      "functions": {
+        "positionSurfacePins": {
+          "calls": 50,
+          "ms": 195.80000000447035,
+          "max": 19.800000000745058
+        },
+        "drawWorld": {
+          "calls": 36,
+          "ms": 1384.600000007078,
+          "max": 83.30000000074506
+        },
+        "observerRows": {
+          "calls": 14,
+          "ms": 29.60000000335276,
+          "max": 5.800000000745058
+        },
+        "render": {
+          "calls": 14,
+          "ms": 767.4000000003725,
+          "max": 92.70000000111759
+        }
+      }
+    }
+  ],
+  "normalCpuAfter": [
+    {
+      "mode": "paused-world",
+      "day": 1,
+      "p95FrameMs": 17,
+      "frames": 205,
+      "functions": {}
+    },
+    {
+      "mode": "24x-world",
+      "day": 120,
+      "p95FrameMs": 100,
+      "frames": 219,
+      "functions": {
+        "drawSurfaceRegion": {
+          "calls": 80,
+          "ms": 1172.2999999970198,
+          "max": 196.59999999962747
+        },
+        "positionSurfacePins": {
+          "calls": 97,
+          "ms": 106.3000000026077,
+          "max": 11.400000000372529
+        },
+        "drawWorld": {
+          "calls": 80,
+          "ms": 1214.0000000018626,
+          "max": 196.80000000074506
+        },
+        "observerRows": {
+          "calls": 34,
+          "ms": 20.500000001862645,
+          "max": 2.799999998882413
+        },
+        "render": {
+          "calls": 17,
+          "ms": 484.2000000011176,
+          "max": 201.30000000074506
+        }
+      }
+    },
+    {
+      "mode": "24x-village",
+      "day": 259,
+      "p95FrameMs": 33,
+      "frames": 217,
+      "functions": {
+        "positionSurfacePins": {
+          "calls": 121,
+          "ms": 70.20000000111759,
+          "max": 10.099999999627471
+        },
+        "drawWorld": {
+          "calls": 103,
+          "ms": 628.4000000115484,
+          "max": 24.09999999962747
+        },
+        "observerRows": {
+          "calls": 18,
+          "ms": 5.599999995902181,
+          "max": 1.699999999254942
+        },
+        "render": {
+          "calls": 18,
+          "ms": 198.1999999973923,
+          "max": 32.69999999925494
+        }
+      }
+    }
+  ]
+}
