@@ -71,6 +71,7 @@ const rival=r.villages[0];rival.soldiers=2;rival.tech=0;rival.fort=0;region.mili
 r.owners['45,30']=0;r.owners['44,30']=1;
 const populationBefore=w.people.filter(n=>n.alive).length+rival.pop;
 assert.equal(region.campaign(0,1,true),'');const campaign=r.campaigns[0];w.day=campaign.arrives;region.resolve(campaign);
+assert.equal(campaign.phase,'assault');assert.equal(r.battleCount,0);w.day=campaign.arrives;region.resolve(campaign);
 assert.equal(r.battleCount,1);assert.ok(w.people.filter(n=>n.alive).length+rival.pop<populationBefore,'Combat must have actual casualties');
 assert.equal(region.faction(r.owners['44,30']),region.faction(0),'Victory must transfer contested land or conquer its settlement');
 assert.equal(campaign.phase,'return');w.day=campaign.arrives;region.resolve(campaign);
