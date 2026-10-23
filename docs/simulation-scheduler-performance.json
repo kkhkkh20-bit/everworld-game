@@ -1,0 +1,387 @@
+{
+  "method": "Chromium 390x844, CPU 4x, fresh seed 1840, sequential 4-second samples, no concurrent CPU tests. Nested function times overlap; not additive. Single-run shared-host variance. Profiling includes dailyStep, stepWorldDay, save, regionStep, evolveWorld, chooseIntent and updateNeedsDaily.",
+  "before": [
+    {
+      "mode": "paused-world",
+      "elapsedMs": 4026,
+      "day": 1,
+      "p95FrameMs": 17,
+      "frames": 238,
+      "functions": {},
+      "advancedDays": 0
+    },
+    {
+      "mode": "24x-world",
+      "elapsedMs": 4545,
+      "day": 22,
+      "p95FrameMs": 467,
+      "frames": 22,
+      "functions": {
+        "drawSurfaceRegion": {
+          "calls": 35,
+          "ms": 1612.9000000003725,
+          "max": 448.59999999962747
+        },
+        "positionSurfacePins": {
+          "calls": 48,
+          "ms": 257.4999999925494,
+          "max": 39.90000000037253
+        },
+        "drawWorld": {
+          "calls": 35,
+          "ms": 1706.999999994412,
+          "max": 452.09999999962747
+        },
+        "chooseIntent": {
+          "calls": 512,
+          "ms": 285.80000000074506,
+          "max": 26.200000001117587
+        },
+        "updateNeedsDaily": {
+          "calls": 1344,
+          "ms": 133.39999999850988,
+          "max": 18.100000001490116
+        },
+        "regionStep": {
+          "calls": 21,
+          "ms": 70.40000000037253,
+          "max": 14.400000000372529
+        },
+        "evolveWorld": {
+          "calls": 21,
+          "ms": 52.90000000037253,
+          "max": 31
+        },
+        "stepWorldDay": {
+          "calls": 21,
+          "ms": 1435.8999999966472,
+          "max": 318.59999999962747
+        },
+        "dailyStep": {
+          "calls": 21,
+          "ms": 1442.800000000745,
+          "max": 324.5
+        },
+        "observerRows": {
+          "calls": 26,
+          "ms": 22.700000001117587,
+          "max": 4.900000000372529
+        },
+        "render": {
+          "calls": 13,
+          "ms": 1472.0000000018626,
+          "max": 464.5
+        },
+        "save": {
+          "calls": 3,
+          "ms": 224.7999999988824,
+          "max": 98.40000000037253
+        }
+      },
+      "advancedDays": 21
+    },
+    {
+      "mode": "24x-village",
+      "elapsedMs": 4301,
+      "day": 43,
+      "p95FrameMs": 400,
+      "frames": 23,
+      "functions": {
+        "positionSurfacePins": {
+          "calls": 51,
+          "ms": 200.6999999973923,
+          "max": 35.30000000074506
+        },
+        "drawWorld": {
+          "calls": 37,
+          "ms": 1349.2000000048429,
+          "max": 146.90000000037253
+        },
+        "chooseIntent": {
+          "calls": 448,
+          "ms": 182.39999999664724,
+          "max": 11.5
+        },
+        "updateNeedsDaily": {
+          "calls": 1280,
+          "ms": 116.60000000707805,
+          "max": 6.800000000745058
+        },
+        "regionStep": {
+          "calls": 20,
+          "ms": 71.49999999441206,
+          "max": 29.40000000037253
+        },
+        "evolveWorld": {
+          "calls": 20,
+          "ms": 63,
+          "max": 44
+        },
+        "stepWorldDay": {
+          "calls": 20,
+          "ms": 1080.5999999959022,
+          "max": 210.19999999925494
+        },
+        "dailyStep": {
+          "calls": 20,
+          "ms": 1085.4999999962747,
+          "max": 210.19999999925494
+        },
+        "observerRows": {
+          "calls": 14,
+          "ms": 16.699999999254942,
+          "max": 7.5
+        },
+        "render": {
+          "calls": 14,
+          "ms": 778.4000000040978,
+          "max": 87.5
+        },
+        "save": {
+          "calls": 3,
+          "ms": 98.69999999925494,
+          "max": 39.19999999925494
+        }
+      },
+      "advancedDays": 21
+    }
+  ],
+  "after": [
+    {
+      "mode": "paused-world",
+      "elapsedMs": 4018,
+      "day": 1,
+      "p95FrameMs": 17,
+      "frames": 241,
+      "functions": {},
+      "advancedDays": 0
+    },
+    {
+      "mode": "24x-world",
+      "elapsedMs": 4138,
+      "day": 28,
+      "p95FrameMs": 350,
+      "frames": 28,
+      "functions": {
+        "drawSurfaceRegion": {
+          "calls": 27,
+          "ms": 1236.0999999977648,
+          "max": 379.1000000014901
+        },
+        "positionSurfacePins": {
+          "calls": 41,
+          "ms": 258.50000000558794,
+          "max": 22.800000000745058
+        },
+        "drawWorld": {
+          "calls": 27,
+          "ms": 1279.9000000022352,
+          "max": 380.1000000014901
+        },
+        "chooseIntent": {
+          "calls": 640,
+          "ms": 287.9000000152737,
+          "max": 13.299999998882413
+        },
+        "updateNeedsDaily": {
+          "calls": 1728,
+          "ms": 198.40000000037253,
+          "max": 8.300000000745058
+        },
+        "regionStep": {
+          "calls": 27,
+          "ms": 76.3999999947846,
+          "max": 17.40000000037253
+        },
+        "evolveWorld": {
+          "calls": 27,
+          "ms": 53.20000000111759,
+          "max": 26.90000000037253
+        },
+        "stepWorldDay": {
+          "calls": 27,
+          "ms": 1352.2000000011176,
+          "max": 154
+        },
+        "dailyStep": {
+          "calls": 27,
+          "ms": 1355.8999999985099,
+          "max": 154.2999999988824
+        },
+        "observerRows": {
+          "calls": 28,
+          "ms": 34.70000000298023,
+          "max": 4.599999999627471
+        },
+        "save": {
+          "calls": 1,
+          "ms": 61.19999999925494,
+          "max": 61.19999999925494
+        }
+      },
+      "advancedDays": 27
+    },
+    {
+      "mode": "24x-village",
+      "elapsedMs": 4064,
+      "day": 52,
+      "p95FrameMs": 650,
+      "frames": 22,
+      "functions": {
+        "positionSurfacePins": {
+          "calls": 36,
+          "ms": 161.80000001378357,
+          "max": 14.800000000745058
+        },
+        "drawWorld": {
+          "calls": 23,
+          "ms": 968.4000000022352,
+          "max": 109.10000000149012
+        },
+        "chooseIntent": {
+          "calls": 512,
+          "ms": 183.70000000670552,
+          "max": 12.099999999627471
+        },
+        "updateNeedsDaily": {
+          "calls": 1472,
+          "ms": 156.10000000335276,
+          "max": 13
+        },
+        "regionStep": {
+          "calls": 23,
+          "ms": 30.89999999664724,
+          "max": 5.199999999254942
+        },
+        "evolveWorld": {
+          "calls": 23,
+          "ms": 29.59999999962747,
+          "max": 12.900000000372529
+        },
+        "stepWorldDay": {
+          "calls": 23,
+          "ms": 940.0000000018626,
+          "max": 225.2000000011176
+        },
+        "dailyStep": {
+          "calls": 23,
+          "ms": 943.0000000037253,
+          "max": 225.2000000011176
+        },
+        "observerRows": {
+          "calls": 13,
+          "ms": 9.100000003352761,
+          "max": 2.199999999254942
+        },
+        "save": {
+          "calls": 1,
+          "ms": 73.5,
+          "max": 73.5
+        }
+      },
+      "advancedDays": 24
+    }
+  ],
+  "matureAfter": {
+    "scenario": "Approximately five-year save, 12 settlements, CPU 4x; sequential run without other CPU tests",
+    "results": [
+      {
+        "mode": "paused-world",
+        "elapsedMs": 4040,
+        "startDay": 1826,
+        "day": 1826,
+        "advancedDays": 0,
+        "p95FrameMs": 17,
+        "frames": 240,
+        "functions": {}
+      },
+      {
+        "mode": "24x-world",
+        "elapsedMs": 4062,
+        "startDay": 1826,
+        "day": 1838,
+        "advancedDays": 12,
+        "p95FrameMs": 500,
+        "frames": 13,
+        "functions": {
+          "refreshSimulationPresentation": {
+            "calls": 14,
+            "ms": 398.09999999962747,
+            "max": 74.80000000074506
+          },
+          "drawSurfaceRegion": {
+            "calls": 14,
+            "ms": 1264.0000000018626,
+            "max": 371.19999999925494
+          },
+          "positionSurfacePins": {
+            "calls": 25,
+            "ms": 244.10000000149012,
+            "max": 55.70000000111759
+          },
+          "drawWorld": {
+            "calls": 14,
+            "ms": 1271.4000000022352,
+            "max": 371.30000000074506
+          },
+          "dailyStep": {
+            "calls": 12,
+            "ms": 975.5000000037253,
+            "max": 290.30000000074506
+          },
+          "observerRows": {
+            "calls": 22,
+            "ms": 27.300000002607703,
+            "max": 3.200000001117587
+          },
+          "save": {
+            "calls": 1,
+            "ms": 277.09999999962747,
+            "max": 277.09999999962747
+          }
+        }
+      },
+      {
+        "mode": "24x-village",
+        "elapsedMs": 4131,
+        "startDay": 1839,
+        "day": 1862,
+        "advancedDays": 23,
+        "p95FrameMs": 267,
+        "frames": 23,
+        "functions": {
+          "refreshSimulationPresentation": {
+            "calls": 24,
+            "ms": 370.69999999925494,
+            "max": 42.20000000111759
+          },
+          "positionSurfacePins": {
+            "calls": 39,
+            "ms": 262.60000000707805,
+            "max": 32
+          },
+          "drawWorld": {
+            "calls": 24,
+            "ms": 1156.4000000003725,
+            "max": 83.5
+          },
+          "dailyStep": {
+            "calls": 23,
+            "ms": 1175.9999999981374,
+            "max": 113.59999999962747
+          },
+          "observerRows": {
+            "calls": 15,
+            "ms": 25.10000000335276,
+            "max": 4.5
+          },
+          "save": {
+            "calls": 1,
+            "ms": 157.5,
+            "max": 157.5
+          }
+        }
+      }
+    ]
+  }
+}
