@@ -21,6 +21,7 @@ jobs:
         run: |
           node tests/valley.cjs
           node tests/valley-regions.cjs
+          node tests/landscape.mjs
           node tests/valley-legacy.cjs
           node tests/isekai.cjs
           node tests/frontier.cjs
