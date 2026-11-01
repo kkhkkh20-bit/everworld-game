@@ -3,22 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>누르면 보이는 마을 — 시저에서 배운 화면 기획</title>
-  <meta name="description" content="시저와 파라오의 실제 화면을 참고한 건물 정보창, 주민 카드, 먹거리 흐름 기획. 눌러 볼 수 있는 예시 화면입니다.">
+  <title>마을은 스스로, 우리는 전략을 — 버들나루 기획</title>
+  <meta name="description" content="자동 건설·자동 생활을 지켜보다 전략과 위기 대응을 결정하는 마을 게임 기획. 전략 선택과 건물·주민 관찰 시안, 시저·파라오 참고 화면.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="site-header"><a class="wordmark" href="#">버들나루 <span>화면 기획</span></a><nav aria-label="문서"><a href="#prototype">화면 시안</a><a href="#references">참고 게임</a><a href="#plan">적용 계획</a></nav></header>
+<header class="site-header"><a class="wordmark" href="#">버들나루 <span>화면 기획</span></a><nav aria-label="문서"><a href="#strategy">전략 개입</a><a href="#prototype">관찰 시안</a><a href="#plan">적용 계획</a></nav></header>
 <main>
   <section class="intro wrap">
     <p class="eyebrow">CAESAR → OUR VILLAGE · 2026.11.01</p>
-    <h1>누르면,<br>마을의 하루가 보인다.</h1>
-    <p class="lead">밭에서 누가 일하는지. 먹을 것이 어디로 가는지.<br>설명서를 읽기 전에, 마을에서 알아볼 수 있게.</p>
-    <div class="intro-links"><a class="link-button" href="#prototype">화면을 눌러 보기 ↓</a><a href="../../frontier.html">현재 게임 열기 ↗</a></div>
+    <h1>마을은 스스로 살아가고,<br>우리는 방향을 정한다.</h1>
+    <p class="lead">집을 어디에 지을지, 누가 일할지는 마을이 알아서.<br>우리는 무엇을 우선하고, 누구와 손잡고, 어떤 위험을 감수할지.</p>
+    <div class="intro-links"><a class="link-button" href="#strategy">우리의 개입 살펴보기 ↓</a><a href="../../frontier.html">현재 게임 열기 ↗</a></div>
+  </section>
+
+  <section id="strategy" class="strategy-section wrap" aria-labelledby="strategy-title">
+    <div class="section-heading"><div><p class="eyebrow">CORE LOOP · 자동 생활과 전략적 개입</p><h2 id="strategy-title">우리는 중요한 선택을 한다.</h2></div><span class="draft-badge">방향 수정 · 기획 예시</span></div>
+    <p class="section-intro">건물 배치·건설·일 배정·운반은 자동입니다. 평소에는 마을의 방향을 정하고, 위기가 오면 한시적으로 대응합니다. 건물과 주민을 눌러 보는 창은 선택의 근거를 알아보는 곳입니다.</p>
+    <div class="strategy-loop" aria-label="플레이 흐름"><span>🏘 자동 생활</span><b>→</b><span>👀 변화 발견</span><b>→</b><span>⚑ 방향 결정</span><b>→</b><span>🚶 자동 실행</span><b>→</b><span>📊 결과 관찰</span></div>
+    <div class="strategy-example"><p class="eyebrow">예시 · 겨울을 앞둔 작은 마을</p><h3>어떻게 먹을 것을 마련할까?</h3><p>방향을 고르면 얻는 것과 감수할 것을 볼 수 있어요.</p>
+      <div class="strategy-choices" role="group" aria-label="전략 예시 선택"><button data-strategy="self" aria-pressed="true"><span>🌾</span><strong>우리 힘으로 버티기</strong><small>먹거리·잠자리 우선</small></button><button data-strategy="trade" aria-pressed="false"><span>🤝</span><strong>나무로 곡물 구하기</strong><small>이웃과 반복 교환</small></button><button data-strategy="protect" aria-pressed="false"><span>🛡</span><strong>강한 이웃의 보호</strong><small>도움을 받고 수확 일부 납부</small></button></div>
+      <div id="strategy-preview" class="strategy-preview" aria-live="polite"></div>
+      <div class="strategy-actions"><button id="strategy-apply" class="link-button">이 방향으로 맡기기</button><button id="strategy-auto">AI 판단에 맡기기</button></div>
+      <p id="strategy-status" class="strategy-status" role="status">선택 전 미리보기 · 실제 게임은 변경되지 않아요.</p>
+    </div>
+    <div class="principles"><article><span>전략</span><h3>평소의 방향</h3><p>겨울 대비, 교역 중심 성장, 주거 확장, 보호 협정. 정한 범위 안에서 주민과 지도자가 계속 판단합니다.</p></article><article><span>전술</span><h3>눈앞의 위기 대응</h3><p>수레 호위, 출발 연기, 방어 집중, 철수. 투입 한도와 끝나는 조건을 정하고 현장 실행은 맡깁니다.</p></article><article><span>관찰</span><h3>우리 선택의 결과</h3><p>왜 공사가 늦어졌는지, 곡물 수레가 도착했는지, 얼마를 조공으로 보냈는지 실제 변화로 확인합니다.</p></article></div>
+    <p class="fine-print">첫겨울의 자급·교환·보호는 현재 게임에 있는 선택입니다. 위 예시는 설명용이며 실제 진행·결과를 계산하지 않습니다. 기간 제한 대응·호위·철수는 추가 기획입니다. <a href="https://github.com/kkhkkh20-bit/everworld-game/blob/main/docs/strategy-intervention.md">자동으로 맡길 일, 전략·전술의 비용과 개발 순서 ↗</a></p>
   </section>
 
   <section id="prototype" class="demo-section wrap" aria-labelledby="demo-title">
-    <div class="section-heading"><div><p class="eyebrow">01 · 우리 게임에 적용할 모습</p><h2 id="demo-title">건물도, 주민도 눌러 보세요.</h2></div><span class="draft-badge">기획 시안 · 예시 데이터</span></div>
+    <div class="section-heading"><div><p class="eyebrow">01 · 판단을 돕는 관찰 창</p><h2 id="demo-title">궁금한 건물과 주민을 살펴본다.</h2></div><span class="draft-badge">기획 시안 · 예시 데이터</span></div>
     <p class="demo-note">아래는 실제 게임을 촬영한 지도에 새 UI를 얹은 <strong>클릭 가능한 시안</strong>입니다. 주민 이름·수치·동선은 설명용 예시이며, 아직 게임에 적용되지 않았습니다.</p>
     <div class="game-frame" id="game-frame">
       <div class="world" aria-label="현재 게임에서 촬영한 마을 배경 위에 건물과 주민 선택 버튼을 배치한 시안">
@@ -40,7 +54,7 @@
       <nav class="game-bottom" aria-label="시안의 화면 선택"><button data-view="farm" aria-pressed="true">🌾 건물</button><button data-view="people" aria-pressed="false">👥 주민 12명</button><button data-view="food" aria-pressed="false">🍲 먹거리 흐름</button></nav>
       <div class="demo-watermark">UI 기획 시안 · 실제 게임 기능 아님</div>
     </div>
-    <div class="demo-caption"><p><b>눌러 볼 순서</b> 밭 → 하린 → 집 → 먹거리 흐름</p><p>한 번에 정보창 하나. 지도를 누비는 일과 자동 작업은 계속.</p></div>
+    <div class="demo-caption"><p><b>선택적 관찰</b> 밭 → 하린 → 집 → 먹거리 흐름</p><p>일을 시키는 절차 없이, 궁금할 때만 눌러 살펴봅니다.</p></div>
     <noscript><p>클릭 시안에는 자바스크립트가 필요합니다. 아래 참고 스크린샷과 적용 계획은 그대로 읽을 수 있습니다.</p></noscript>
   </section>
 
@@ -78,14 +92,15 @@
     <p class="fine-print">“마을 창고”는 기존 중앙 적재 장소를 선택하게 하는 제안입니다. 새 창고 건물이나 집마다 배달하는 체계를 추가한다는 뜻은 아닙니다. 현재 시장은 교역의 필수 조건이 아니므로, 설명만으로 필수 건물처럼 바꾸지 않습니다.</p>
     <div class="language-board"><h3>어려운 말도 바꿉니다.</h3><dl><div><dt>비축 18일</dt><dd>🍲 지금 있는 먹을 것으로 18일</dd></div><div><dt>순증감 −2</dt><dd>📉 오늘 먹은 양이 들어온 양보다 2개 많아요</dd></div><div><dt>조공 12%</dt><dd>🤝 수확 100개 중 12개를 보내고 보호받아요</dd></div><div><dt>경작권 분쟁</dt><dd>🌾 두 마을이 이 밭을 쓰겠다고 다투고 있어요</dd></div><div><dt>동원</dt><dd>🛡 일하던 주민이 싸우러 가요</dd></div><div><dt>시설 상태 62%</dt><dd>🛠 건물이 낡았어요 · 실제 수리 재료와 영향 보기</dd></div></dl><p class="fine-print">“몇 일분”은 현재 인구의 하루 식사량으로 나눈 값이며, 앞으로의 수확까지 보장하는 예측으로 쓰지 않습니다.</p></div>
     <h3 class="subheading">첫 5분이 이렇게 이어지게 합니다.</h3>
-    <ol class="first-minutes"><li><b>처음 도착</b><span>잠자리 6개 / 주민 12명. 텐트를 눌러 왜 집이 필요한지 확인.</span></li><li><b>밭을 누름</b><span>누가 먹을 것을 구하는지 확인. 한 사람을 눌러 창고까지 따라감.</span></li><li><b>창고를 누름</b><span>먹은 양과 들어온 양을 비교. 부족하면 밭·오는 짐으로 이동.</span></li><li><b>이웃이 발견됨</b><span>교환할 물건과 도착할 수레, 보호를 받는 대가를 그림과 수치로 확인.</span></li><li><b>시간을 보냄</b><span>집이 완성되고 자루가 쌓이는 변화를 봄. 결과를 보고 다음 우선순위만 선택.</span></li></ol>
+    <ol class="first-minutes"><li><b>처음 도착</b><span>우리 마을과 이웃의 자동 생활을 봅니다. 건물 위치와 작업은 마을이 정합니다.</span></li><li><b>상황 확인</b><span>먹거리·주거 상황과 자급·교역·보호의 비용과 대가를 확인합니다.</span></li><li><b>방향 결정</b><span>중요한 우선순위를 정하거나 AI에 맡깁니다. 궁금하면 건물과 주민을 눌러 봅니다.</span></li><li><b>자동 실행</b><span>달라진 일 배정, 공사와 수레 출발을 지도에서 봅니다.</span></li><li><b>결과 관찰</b><span>비축·집·교역·조공의 실제 변화를 보고 방향을 유지하거나 바꿉니다.</span></li></ol>
     <h3 class="subheading">만드는 순서</h3>
-    <ol class="implementation"><li><b>1. 건물을 누를 수 있게</b><p>각 건물에 고유 번호를 붙이고 실제 선택과 연결. 역할·실제 효과·건설 부족 재료를 먼저 표시합니다. 작업조 정보는 개인 주민이라고 부르지 않습니다.</p></li><li><b>2. 주민 한 명씩 기록</b><p>우리 마을 12명부터 고유 번호, 집, 현재 일과 짐을 연결. 출생·사망·이주 후에도 인원과 기록이 맞아야 합니다. 개별 명령은 추가하지 않습니다.</p></li><li><b>3. 먹거리의 이동을 연결</b><p>수확, 짐 이동, 창고 도착, 식사의 실제 처리에서 기록을 남기고 화살표와 정보창이 같은 기록을 봅니다. 멈춘 이유도 실제 조건만 표시합니다.</p></li><li><b>4. 이웃 마을에도 적용</b><p>선택한 이웃의 건물·주민을 같은 방식으로 확인. 세계 전체 인원·이주 기록이 맞는지, 오래 진행한 저장에서도 속도가 유지되는지 검증합니다.</p></li></ol>
-    <div class="done-definition"><h3>완성됐다고 볼 기준</h3><p>“이 건물은 뭐 하는 곳인가요?”, “이 사람은 어디로 가나요?”, “먹을 것은 왜 줄었나요?”를 설명문을 찾지 않고 <b>각각 두 번 이내의 클릭</b>으로 확인. 저장 후에도 같은 주민을 다시 찾기. 주민 수와 개인 기록 수, 실제 재고와 화면의 합계 일치.</p></div>
+    <ol class="implementation"><li><b>1. 전략의 선택과 결과부터</b><p>기존 첫겨울·교역·보호·정책을 연결합니다. 비용, 감수할 점, 자동 실행 상태와 실제 결과가 하나의 흐름으로 보여야 합니다.</p></li><li><b>2. 자동 판단을 이해하게</b><p>현재 우선순위와 한도를 표시합니다. 건물·작업·운반의 실제 이유를 궁금할 때 찾아볼 수 있게 합니다.</p></li><li><b>3. 한 가지 전술을 완성</b><p>실제 사건에 연결하고 투입 비용·종료 조건을 둡니다. 끝나면 원래 전략으로 돌아가게 합니다. 호위·철수 등을 한꺼번에 추가하지 않습니다.</p></li><li><b>4. 주민 관찰의 깊이</b><p>실제 개인 기록과 집·일터를 연결합니다. 주민 카드 순회를 의무로 만들거나 전체 개인 모델 완성을 첫 전략 플레이의 선행 조건으로 두지 않습니다.</p></li></ol>
+    <div class="done-definition"><h3>완성됐다고 볼 기준</h3><p>개입하지 않아도 마을이 살아가고, 선택 전에 비용과 대가를 이해하며, 선택 뒤에는 실제 자원·공사·교역·의존 관계의 차이를 볼 수 있어야 합니다. 건물·주민 카드는 그 이유를 <b>두 번 이내의 클릭</b>으로 확인하게 합니다. 기록과 실제 인원·재고는 서로 맞아야 합니다.</p></div>
     <p class="doc-link"><a href="https://github.com/kkhkkh20-bit/everworld-game/blob/main/docs/caesar-inspection-plan.md">구현에 필요한 데이터와 검증 기준까지 읽기 ↗</a></p>
   </section>
 </main>
 <footer class="wrap"><span>조사와 기획 · 2026.11.01</span><a href="../../frontier.html">현재 게임으로 돌아가기 ↗</a><a href="https://github.com/kkhkkh20-bit/everworld-game">소스와 기획 문서 ↗</a></footer>
 <script src="prototype.js"></script>
+<script src="strategy.js"></script>
 </body>
 </html>
