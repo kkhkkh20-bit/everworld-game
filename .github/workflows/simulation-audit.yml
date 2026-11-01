@@ -17,6 +17,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate isekai work and preserved frontier economy
+        run: |
+          node tests/isekai.cjs
+          node tests/frontier.cjs
       - name: Replay ten worlds for 180 days
         shell: bash
         run: node tests/simulate.mjs | tee simulation-report.txt
