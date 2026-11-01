@@ -455,10 +455,10 @@ function enableVillage(s){if(s.village)return s;const t=town(s,0),year=Math.floo
   if(s.day-s.foundingDay<1&&t.policy==='balanced'){t.policy='food';t.reserve=40;decide(s,t);}log(s,[0],'겨울 준비를 관찰하기 시작했다. 주민은 스스로 일하며 교환·보호·자급의 조건은 마을에서 선택할 수 있다.','goal',{story:id});return s;
 }
 function neighbors(s){const t=town(s,0);return s.towns.filter(n=>n.id!==0&&n.pop>0&&Math.hypot(n.x-t.x,n.z-t.z)<155).sort((a,b)=>Math.hypot(a.x-t.x,a.z-t.z)-Math.hypot(b.x-t.x,b.z-t.z)).slice(0,4);}
-function villageQuote(s,id,kind='trade'){
+function villageQuote(s,id,kind='trade',newTerms=false){
   const t=town(s,0),other=town(s,Number(id));if(!other||other.id===0||other.pop<=0)return null;let path=findPath(s,0,other.id),distance=path?routeDistance(s,0,other.id):Paths.length(Paths.between(s,Paths.depot(t),Paths.depot(other))||[Paths.depot(t),Paths.depot(other)]),available=Math.max(0,other.food-foodNeed(other)*24),q=Math.floor(Math.min(available,foodNeed(t)*(kind==='protect'?30:10))),cost=Math.ceil(q*price(other,'food')/price(other,'wood'));
   let logistics=null;if(s.frontierEconomy){if(path)logistics=Commerce.transport(s,path,other);else{const cap=Commerce.tiers[0];logistics={...cap,vehicle:'porter',days:distance/cap.speed,food:Math.ceil(2*distance/cap.speed*cap.crew*.03)};}q=Math.min(q,logistics.capacity,kind==='protect'?Infinity:Math.floor(logistics.capacity*price(other,'wood')/price(other,'food')));cost=Math.ceil(q*price(other,'food')/price(other,'wood'));}
-  const approved=s.village?.plan;if(kind==='trade'&&approved?.kind==='trade'&&approved.partner===other.id&&approved.maxWood){q=Math.min(q,approved.maxGrain||q,Math.floor(approved.maxWood*price(other,'wood')/price(other,'food')));cost=Math.ceil(q*price(other,'food')/price(other,'wood'));}
+  const approved=s.village?.plan;if(!newTerms&&kind==='trade'&&approved?.kind==='trade'&&approved.partner===other.id&&approved.maxWood){q=Math.min(q,approved.maxGrain||q,Math.floor(approved.maxWood*price(other,'wood')/price(other,'food')));cost=Math.ceil(q*price(other,'food')/price(other,'wood'));}
   let reason='';if(atWar(s,0,other.id))reason='교전 중이라 협상할 수 없습니다';else if(q<6)reason='상대가 내보낼 식량이 부족합니다';else if(kind==='protect'&&t.liege!==null&&t.liege!==other.id)reason='이미 다른 보호자와 계약 중입니다';else if(t.expedition&&t.expedition.target!==other.id)reason='다른 이웃으로 가는 길을 준비 중입니다';
   const proposed=path?null:t.expedition?.target===other.id?t.expedition.infrastructure:Commerce.infrastructure(s,Paths.between(s,Paths.depot(t),Paths.depot(other))||[]);
   const contact=path?null:Commerce.infrastructure(s,Paths.between(s,Paths.depot(t),Paths.depot(other))||[],s.frontierEconomy?0:1);
@@ -488,7 +488,7 @@ function villageObjective(s){
   return {...base,id:'politics',title:'우리 마을의 입지를 정할 때',action:'독립·교역·보호 방침 살펴보기',reason:'주변 세력의 필요와 요구를 보고 어느 관계를 유지할지 결정해요.'};
 }
 function winterChoice(s,kind,id,approvedWood=null){enableVillage(s);const t=town(s,0),v=s.village;if(!['trade','protect','self'].includes(kind))return '선택할 수 없는 방침입니다';if(!t.pop)return '주민이 없는 마을입니다';let quote=null;
-  if(kind!=='self'){quote=villageQuote(s,id,kind);if(!quote?.can)return quote?.reason||'가까운 이웃을 선택하세요';if(kind==='trade'&&approvedWood!==null&&(!Number.isFinite(approvedWood)||approvedWood<quote.cost))return '교환 조건이 바뀌었습니다. 현재 목재 비용을 다시 확인하세요';if(!quote.connected&&!t.expedition&&t.food<5)return '정찰 식량 5가 필요합니다';}
+  if(kind!=='self'){quote=villageQuote(s,id,kind,approvedWood!==null);if(!quote?.can)return quote?.reason||'가까운 이웃을 선택하세요';if(kind==='trade'&&approvedWood!==null&&(!Number.isFinite(approvedWood)||approvedWood<quote.cost))return '교환 조건이 바뀌었습니다. 현재 목재 비용을 다시 확인하세요';if(!quote.connected&&!t.expedition&&t.food<5)return '정찰 식량 5가 필요합니다';}
   const before=villageSnapshot(s);if(quote&&!quote.connected&&!t.expedition){const error=startExploration(s,0,Number(id));if(error)return error;}
   if(kind!=='protect')for(const offer of s.offers)if(offer.to===0&&offer.status==='pending')offer.status='declined';
   t.policy=kind==='trade'?'trade':'food';t.reserve=40;t.tradeOpen=kind!=='self';t.auto=false;
