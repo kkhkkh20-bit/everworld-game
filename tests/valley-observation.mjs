@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {findObservedEvent} from '../js/valley-observation.js';
+const E=createRequire(import.meta.url)('../js/valley-engine.js');
+const events=[{id:8,type:'build',ids:[0]},{id:7,type:'trade',ids:[1,2]},{id:6,type:'war',ids:[3,4]},{id:5,type:'milestone',ids:[0]},{id:4,type:'build',ids:[0]}],raw=JSON.stringify(events);
+assert.equal(findObservedEvent(events,5,0).id,5,'return the first relevant local change, not an unrelated shipment');assert.equal(findObservedEvent(events,6,0).id,8);assert.equal(findObservedEvent(events,5,null).id,6,'world observation stops for a wider conflict');assert.equal(findObservedEvent(events,7,null),null,'routine global shipments and house construction do not stop world observation');assert.equal(findObservedEvent(events,5,2).id,7);assert.equal(JSON.stringify(events),raw);assert.equal(findObservedEvent([{id:9,type:'life',ids:[0]}],9,0).id,9);assert.equal(findObservedEvent([{id:10,type:'pact',ids:[1,2]}],10,null).id,10);
+const s=E.world(7341);E.foodOrder(s,'farm');const start=s.nextEvent;let observed=null;for(let day=0;day<35&&!observed;day++){for(let i=0;i<10;i++)E.step(s,.1);observed=findObservedEvent(s.events,start,0);}assert.ok(observed&&observed.ids.includes(0));assert.ok(['build','milestone'].includes(observed.type),'a new player reaches actual farming progress');const snapshot=JSON.stringify(s);findObservedEvent(s.events,start,0);assert.equal(JSON.stringify(s),snapshot,'observation does not mutate resources or RNG');
+console.log('PASS observation: scoped local progress, meaningful world events, chronological selection and pure reads of actual simulated changes');

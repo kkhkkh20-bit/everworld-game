@@ -6,6 +6,7 @@ import { createLivelihoodLayer } from './valley-scene-livelihood.js?v=2';
 import { createWaterLayer } from './valley-scene-water.js?v=2';
 import { createLandscape } from './valley-landscape.mjs?v=10';
 import { gridLayer } from './valley-scene-geometry.js?v=1';
+import {createOceanLayer} from './valley-scene-ocean.js?v=1';
 import { createRoadLayer } from './valley-scene-roads.js?v=3';
 import { createBuildingLayer } from './valley-scene-buildings.js?v=3';
 import { createActorModels } from './valley-scene-actors.js?v=4';
@@ -39,11 +40,7 @@ export async function createView(canvas, state, callbacks) {
   terrainGeo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));terrainGeo.computeVertexNormals();
   const terrainLayer=gridLayer(terrainGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,flatShading:!!landscape.island}),scene);const baseTerrainColors=Float32Array.from(col),borders=new THREE.Group();scene.add(borders);let politicalSignature='';
   if(landscape.island){
-    const deepSea=new THREE.Mesh(new THREE.PlaneGeometry(worldWidth*6,worldDepth*6),new THREE.MeshStandardMaterial({color:'#285a78',roughness:.6,metalness:.03}));deepSea.rotation.x=-Math.PI/2;deepSea.position.set(centerX,-.14,centerZ);scene.add(deepSea);
-    const seaGeo=new THREE.PlaneGeometry(worldWidth*2.4,worldDepth*2.4,160,160);seaGeo.rotateX(-Math.PI/2);seaGeo.translate(centerX,-.12,centerZ);
-    const positions=seaGeo.attributes.position,seaColors=[];
-    for(let i=0;i<positions.count;i++){const distance=landscape.island.coastDistance(positions.getX(i),positions.getZ(i)),color=new THREE.Color('#285a78').lerp(new THREE.Color('#65b6b2'),Math.max(0,Math.min(1,(distance+80)/80)));seaColors.push(color.r,color.g,color.b);}
-    seaGeo.setAttribute('color',new THREE.Float32BufferAttribute(seaColors,3));gridLayer(seaGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.6,metalness:.03}),scene,32,false);
+    createOceanLayer(scene,{worldWidth,worldDepth,centerX,centerZ},landscape.island.coastDistance);
     const shore=Array.from({length:points.count},(_,i)=>landscape.island.coastDistance(points.getX(i),points.getZ(i))),stride=terrainGeo.parameters.widthSegments+1,coastVertices=[];
     for(let iz=0;iz<terrainGeo.parameters.heightSegments;iz++)for(let ix=0;ix<stride-1;ix++){
       const a=iz*stride+ix,ids=[a,a+1,a+stride+1,a+stride],cross=[];

@@ -1,0 +1,238 @@
+{
+  "recordedAt": "2026-11-01T15:57:52.478427+00:00",
+  "referenceCommit": "bb0d3ee",
+  "cameraConditions": {
+    "browser": "Chromium 154 / SwiftShader",
+    "viewports": [
+      [
+        900,
+        700
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "scenario": "seed 7341, paused whole-continent view, 18 translations of the camera by 0.11 world units on x",
+    "sampledSeaPoints": 401,
+    "unstableThreshold": "range > 12 in any RGB channel at the same projected world point",
+    "performanceBenchmark": false
+  },
+  "cameraResults": [
+    {
+      "version": "before",
+      "viewport": [
+        900,
+        700
+      ],
+      "unstable": 278,
+      "sampled": 401
+    },
+    {
+      "version": "after",
+      "viewport": [
+        900,
+        700
+      ],
+      "unstable": 0,
+      "sampled": 401
+    },
+    {
+      "version": "after",
+      "viewport": [
+        390,
+        844
+      ],
+      "unstable": 4,
+      "sampled": 401
+    }
+  ],
+  "playScenario": "New survival campaign; pause after loading; choose farming; click next change six times. These are actual UI runs, not a formal equal-time performance comparison. Input timing can change initial substeps.",
+  "playBefore": [
+    {
+      "day": 181,
+      "advanced": 1,
+      "homes": 0,
+      "foodDays": 8.150333333333332,
+      "ownEvents": []
+    },
+    {
+      "day": 184,
+      "advanced": 3,
+      "homes": 0,
+      "foodDays": 5.113513080130667,
+      "ownEvents": []
+    },
+    {
+      "day": 185,
+      "advanced": 1,
+      "homes": 0,
+      "foodDays": 7.287176187303738,
+      "ownEvents": [
+        {
+          "type": "need",
+          "ids": [
+            0
+          ],
+          "text": "버들나루가 식량 공급처를 찾고 있다. 식량 7일분 · 최근 순증감 -0.5/일 · 수확 여건 137%"
+        },
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "버들나루에 첫 열매 3이 도착했다. 주민들이 직접 가져온 먹거리만 비축에 들어갔다."
+        }
+      ]
+    },
+    {
+      "day": 186,
+      "advanced": 1,
+      "homes": 0,
+      "foodDays": 6.274601834929131,
+      "ownEvents": []
+    },
+    {
+      "day": 187,
+      "advanced": 1,
+      "homes": 0,
+      "foodDays": 9.847385964592606,
+      "ownEvents": [
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "버들나루에 첫 생선 5이 도착했다. 주민들이 직접 가져온 먹거리만 비축에 들어갔다."
+        },
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "버들나루에 첫 고기 6이 도착했다. 주민들이 직접 가져온 먹거리만 비축에 들어갔다."
+        }
+      ]
+    },
+    {
+      "day": 189,
+      "advanced": 2,
+      "homes": 0,
+      "foodDays": 9.408165143611425,
+      "ownEvents": []
+    }
+  ],
+  "playAfter": [
+    {
+      "day": 185,
+      "advanced": 5,
+      "homes": 0,
+      "foodDays": 7.287176187303738,
+      "ownEvents": [
+        {
+          "type": "need",
+          "ids": [
+            0
+          ],
+          "text": "버들나루가 식량 공급처를 찾고 있다. 식량 7일분 · 최근 순증감 -0.5/일 · 수확 여건 137%"
+        },
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "버들나루에 첫 열매 3이 도착했다. 주민들이 직접 가져온 먹거리만 비축에 들어갔다."
+        }
+      ]
+    },
+    {
+      "day": 187,
+      "advanced": 2,
+      "homes": 0,
+      "foodDays": 9.847385964592606,
+      "ownEvents": [
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "버들나루에 첫 생선 5이 도착했다. 주민들이 직접 가져온 먹거리만 비축에 들어갔다."
+        },
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "버들나루에 첫 고기 6이 도착했다. 주민들이 직접 가져온 먹거리만 비축에 들어갔다."
+        }
+      ]
+    },
+    {
+      "day": 198,
+      "advanced": 11,
+      "homes": 0,
+      "foodDays": 11.396587861670065,
+      "ownEvents": [
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "첫 농장의 수확이 시작됐다."
+        },
+        {
+          "type": "build",
+          "ids": [
+            0
+          ],
+          "text": "버들나루 · 공동 농장 완성. 실제 자재와 공동 노동으로 마을이 넓어졌다."
+        }
+      ]
+    },
+    {
+      "day": 200,
+      "advanced": 2,
+      "homes": 0,
+      "foodDays": 13.284532163241497,
+      "ownEvents": [
+        {
+          "type": "milestone",
+          "ids": [
+            0
+          ],
+          "text": "버들나루에 첫 곡물 5이 도착했다. 주민들이 직접 가져온 먹거리만 비축에 들어갔다."
+        }
+      ]
+    },
+    {
+      "day": 210,
+      "advanced": 10,
+      "homes": 0,
+      "foodDays": 19.3237252419518,
+      "ownEvents": [
+        {
+          "type": "comparison",
+          "ids": [
+            0
+          ],
+          "text": "마을의 결정 뒤 30일을 관찰했다. 식량 9→16일분, 주민 12→12명. 같은 기간의 다른 사건도 포함한다."
+        }
+      ]
+    },
+    {
+      "day": 225,
+      "advanced": 15,
+      "homes": 0,
+      "foodDays": 22.37652081660529,
+      "ownEvents": [
+        {
+          "type": "build",
+          "ids": [
+            0
+          ],
+          "text": "버들나루 · 주택 공사를 계획했다."
+        }
+      ]
+    }
+  ]
+}

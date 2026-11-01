@@ -30,6 +30,7 @@ jobs:
           node tests/continent.mjs
           node tests/terrain-roads.cjs
           node tests/valley-runtime.mjs
+          node tests/valley-observation.mjs
           node tests/scene-motion.mjs
           node tests/valley-travel.cjs
           node tests/valley-legacy.cjs
