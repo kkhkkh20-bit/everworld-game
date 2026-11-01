@@ -24,6 +24,7 @@ jobs:
           node tests/winter.cjs
           node tests/survival.cjs
           node tests/watershed-trade.cjs
+          node tests/frontier-economy.cjs
           node tests/architecture.cjs
           node tests/landscape.mjs
           node tests/continent.mjs

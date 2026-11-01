@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),{chromium}=require('playwright');
 (async()=>{const b=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox','--enable-unsafe-swiftshader']});try{const p=await b.newPage({viewport:{width:390,height:844}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto('http://127.0.0.1:8020/frontier.html');await p.waitForFunction(()=>window.__VALLEY__,null,{timeout:90000});if(!await p.evaluate(()=>__VALLEY__.paused()))await p.locator('#pause').click();
  const result=await p.evaluate(async()=>{
-  const THREE=await import('three'),{createRoadLayer}=await import('./js/valley-scene-roads.js?v=2'),{createBuildingLayer}=await import('./js/valley-scene-buildings.js?v=3'),{createActorModels}=await import('./js/valley-scene-actors.js?v=3');
+  const THREE=await import('three'),{createRoadLayer}=await import('./js/valley-scene-roads.js?v=3'),{createBuildingLayer}=await import('./js/valley-scene-buildings.js?v=3'),{createActorModels}=await import('./js/valley-scene-actors.js?v=4');
   const s=JSON.parse(JSON.stringify(__VALLEY__.state())),geometry=ValleyGeometry.createGeometry(s),object=()=>{const group=new THREE.Group();group.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial()));return group;},scene=new THREE.Scene();
   const roads=createRoadLayer(scene,geometry,object,ValleyPaths),buildings=createBuildingLayer(scene,object,geometry.height,()=> '#ffffff');roads.update(s);buildings.update(s);const initial={roads:roads.stats(),buildings:buildings.stats()};
   // A fixture changes material/ownership only, then adds one new entrance.

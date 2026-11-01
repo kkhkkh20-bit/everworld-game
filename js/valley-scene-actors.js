@@ -10,7 +10,7 @@ export function createActorModels(wheelMaterial){
   const rodGeometry=new THREE.CylinderGeometry(.018,.018,1.9,4),bowGeometry=new THREE.TorusGeometry(.42,.025,3,9,Math.PI),fishPack=new THREE.MeshStandardMaterial({color:'#648f9d'}),meatPack=new THREE.MeshStandardMaterial({color:'#a35f4d'});
   function figure(i,caravan=false,vehicle='handcart'){
     const group=new THREE.Group(),torso=new THREE.Mesh(body,shirts[i%3]),face=new THREE.Mesh(head,skin),bundle=new THREE.Mesh(pack,wood);torso.position.y=.43;face.position.y=.94;bundle.position.set(0,.52,.3);group.add(torso,face,bundle);group.userData.pack=bundle;group.userData.body=torso;
-    if(caravan){
+    if(caravan&&vehicle!=='porter'){
       torso.scale.set(1.5,1.1,1.5);bundle.visible=false;const load=new THREE.Mesh(cart,wood);load.position.set(0,.5,-1.1);group.add(load);group.userData.wheels=[];group.userData.goods=[];
       function beam(x,y,z,sx,sy,sz,material=wood){const m=new THREE.Mesh(beamGeometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);group.add(m);return m;}
       for(const x of [-.55,.55])beam(x,.36,-.55,.08,.08,2.4);
@@ -21,6 +21,7 @@ export function createActorModels(wheelMaterial){
         torso.position.x=1;face.position.x=1;beam(0,.75,1,.7,.65,1.2);for(const x of [-.26,.26])for(const z of [.6,1.4])beam(x,.3,z,.12,.6,.12);beam(0,.95,1.75,.45,.4,.45);for(const x of [-.3,.3])beam(x,1.25,1.8,.1,.25,.1,skin);
       }
     }
+    if(caravan&&vehicle==='porter')group.userData.goods=[bundle];
     if(!caravan){const rod=new THREE.Mesh(rodGeometry,wood),bow=new THREE.Mesh(bowGeometry,wood);rod.position.set(.45,1,.15);rod.rotation.z=-.6;bow.position.set(.4,.7,.1);rod.visible=false;bow.visible=false;group.add(rod,bow);group.userData.rod=rod;group.userData.bow=bow;}
     group.traverse(o=>o.layers.set(1));return group;
   }

@@ -6,8 +6,7 @@ export function visibleTowns(state,inside){
 }
 
 // Retain both color and depth: a moving cart must still pass behind a tree.
-export function createSceneCache(renderer,scene,camera,{allowBlit=true}={}){
-  const gl=renderer.getContext(),blit=allowBlit&&renderer.capabilities.isWebGL2&&!gl.getContextAttributes().antialias&&gl.getParameter(gl.DEPTH_BITS)===24;
+export function createSceneCache(renderer,scene,camera){
   const bufferSize=new THREE.Vector2(),screenScene=new THREE.Scene(),screenCamera=new THREE.Camera();
   const material=new THREE.ShaderMaterial({
     uniforms:{colorMap:{value:null},depthMap:{value:null}},depthTest:true,depthFunc:THREE.AlwaysDepth,depthWrite:true,
@@ -29,27 +28,12 @@ export function createSceneCache(renderer,scene,camera,{allowBlit=true}={}){
       material.uniforms.colorMap.value=target.texture;material.uniforms.depthMap.value=target.depthTexture;key=null;
     }
     const mask=camera.layers.mask,autoClear=renderer.autoClear,background=scene.background;
-    if(blit){
-      // This uses the framebuffer handle from the pinned Three.js 0.160 backend.
-      // Rendering to the canvas first preserves its exact tone mapping and color.
-      if(key!==signature){
-        camera.layers.set(0);renderer.setRenderTarget(null);renderer.autoClear=true;renderer.render(scene,camera);
-        renderer.setRenderTarget(target);const frame=renderer.properties.get(target).__webglFramebuffer;
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER,null);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,frame);
-        gl.blitFramebuffer(0,0,bufferSize.x,bufferSize.y,0,0,bufferSize.x,bufferSize.y,gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT,gl.NEAREST);
-        key=signature;builds++;
-      }else{
-        const frame=renderer.properties.get(target).__webglFramebuffer;
-        gl.bindFramebuffer(gl.READ_FRAMEBUFFER,frame);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,null);
-        gl.blitFramebuffer(0,0,bufferSize.x,bufferSize.y,0,0,bufferSize.x,bufferSize.y,gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT,gl.NEAREST);
-      }
-      renderer.resetState();renderer.setRenderTarget(null);renderer.autoClear=false;
-    }else{
-      if(key!==signature){camera.layers.set(0);renderer.setRenderTarget(target);renderer.autoClear=true;renderer.render(scene,camera);key=signature;builds++;}
-      renderer.setRenderTarget(null);renderer.autoClear=false;renderer.clear();renderer.render(screenScene,screenCamera);
-    }
+    // Restore from an offscreen target. Default-framebuffer depth copies are
+    // not portable, and can silently lose the background across browser frames.
+    if(key!==signature){camera.layers.set(0);renderer.setRenderTarget(target);renderer.autoClear=true;renderer.render(scene,camera);key=signature;builds++;}
+    renderer.setRenderTarget(null);renderer.autoClear=false;renderer.clear();renderer.render(screenScene,screenCamera);
     camera.layers.set(1);scene.background=null;const deferredShadow=renderer.shadowMap.needsUpdate;renderer.shadowMap.needsUpdate=false;renderer.render(scene,camera);renderer.shadowMap.needsUpdate=deferredShadow;
     camera.layers.mask=mask;scene.background=background;renderer.autoClear=autoClear;composites++;
   }
-  return {render,invalidate(){key=null;},stats:()=>({mode:blit?'blit':'depth-shader',builds,composites,width:target?.width||0,height:target?.height||0})};
+  return {render,invalidate(){key=null;},stats:()=>({mode:'depth-shader',builds,composites,width:target?.width||0,height:target?.height||0})};
 }

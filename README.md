@@ -1,6 +1,10 @@
 # 버들나루의 첫 겨울
 
-**주변 강물을 이용하고, 길과 다리를 마련해 교역합니다.** 생활·물·먹거리·교역을 바로 선택하고 실제 짐썰매·손수레·달구지의 물자를 확인하세요. [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?campaign=watershed&v=12) · [규칙과 실제 화면](docs/watershed-commerce.md) · [성능 측정](docs/watershed-performance.md).
+**먼저 자급하고, 남는 자원으로 길과 군사력에 투자합니다.** 초가집 12명으로 출발해 물·먹거리·잠자리를 마련하고, 100년 이상 먼저 정착한 다섯 세력 사이에서 교역·보호·독립을 선택하세요. 도보 짐꾼 → 흙길·손수레 → 자갈길·달구지 → 포장 대로에는 실제 자재·운송 식량·일손·유지비가 듭니다. [새 생존 원정 실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?campaign=survival&v=13) · [규칙과 실제 화면](docs/frontier-survival.md).
+
+새 생존 원정은 기존 대륙·물가 원정과 다른 저장 공간을 씁니다. 주변 국가의 정착 연수는 세계의 초기 배경 설정이며, 사건·전쟁·교역 기록은 실제 진행한 시점부터 남습니다.
+
+**주변 강물을 이용하고, 길과 다리를 마련해 교역합니다.** 생활·물·먹거리·교역을 바로 선택하고 실제 짐썰매·손수레·달구지의 물자를 확인하세요. [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?campaign=watershed&v=12) · [규칙과 실제 화면](docs/watershed-commerce.md) · [v12 측정의 한계와 수정](docs/watershed-performance.md).
 
 **마실 물부터 확보하고, 사냥·낚시·농사 중 먹거리 방침을 정하세요.** 주민이 숲과 물가에 가서 고기·생선을 가져오고, 목재로 배를 만들어 어로에 사용합니다. [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?v=11) · [규칙·실제 화면](docs/survival-settlement.md).
 
