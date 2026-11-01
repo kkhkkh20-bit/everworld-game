@@ -42,8 +42,9 @@ export function createRoadLayer(scene,landscape,object,Paths){
   }
   function update(state){
     const active=[],routes=[];let changed=false;
-    for(const r of state.routes){if(!r.open)continue;const line=Paths.routePoints(state,r.a,r.b);if(!line)continue;const key='route:'+(r.id??r.a+':'+r.b),signature=line;const item=entry(key,signature,line,r.created>.1?.56:.85);active.push([key,item.serial]);routes.push({r,line,item});}
-    for(const t of state.towns)for(const b of t.buildings){const key='entry:'+t.id+':'+b.id,line=[Paths.depot(t),{x:t.x+b.x,z:t.z+4.4},{x:t.x+b.x,z:t.z+b.z+3.4}],signature=JSON.stringify(line);const item=entry(key,signature,line,.36);active.push([key,item.serial]);}
+    for(const r of state.routes){if(!r.open)continue;const line=Paths.routePoints(state,r.a,r.b);if(!line)continue;const key='route:'+(r.id??r.a+':'+r.b),signature=line;const item=entry(key,signature,line,r.created>.1?[.42,.65,.85][window.ValleyCommerce.stage(r)]:.85);active.push([key,item.serial]);routes.push({r,line,item});}
+    for(const t of state.towns)for(const b of t.buildings){if(b.type==='well'&&t.water?.source.path?.length>1)continue;const key='entry:'+t.id+':'+b.id,line=b.type==='well'&&t.water?.source.path?.length>1?t.water.source.path:[Paths.depot(t),{x:t.x+b.x,z:t.z+4.4},{x:t.x+b.x,z:t.z+b.z+3.4}],signature=JSON.stringify(line);const item=entry(key,signature,line,.36);active.push([key,item.serial]);}
+    for(const t of state.towns){const line=t.water?.source.path;if(line?.length>1){const key='water:'+t.id,item=entry(key,JSON.stringify(line),line,.18);active.push([key,item.serial]);}}
     const key=JSON.stringify(active);
     if(key!==activeKey){activeKey=key;mergeChangedChunks(active);changed=true;}
     const nextBridgeKey=JSON.stringify(routes.map(({r,item})=>[r.id,item.serial]));

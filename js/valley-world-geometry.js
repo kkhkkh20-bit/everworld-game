@@ -73,6 +73,7 @@ function createGeometry(state) {
     const points=[[sourceX,port.z-16],[port.x-dir*44,port.z+26],[port.x,port.z+19],[port.x+dir*55,port.z+(port.z<0?40:-16)],[join.x,joinZ]].sort((a,b)=>a[0]-b[0]);
     channels.push(channel('tributary-'+port.id,'x',points[0][0],points.at(-1)[0],x=>spline(points,x),x=>3.6+Math.sin(x*.035+port.id)*.7));
   }
+  if(state.hydrologyVersion>=2)channels.push(channel('western-creek','z',-105,35,z=>-263-(z+70)*.38+Math.sin(z*.07)*2.5,z=>2.1+Math.sin(z*.045)*.35));
   function riverDistance(x,z){let distance=Infinity;
     for(const c of channels){if(x<c.box.minX||x>c.box.maxX||z<c.box.minZ||z>c.box.maxZ)continue;const at=c.axis==='z'?z:x;if(at<c.min||at>c.max)continue;const center=Math.floor((at-c.min)/c.step),range=Math.ceil(c.maxHalf/c.step)+2;
       for(let i=Math.max(0,center-range);i<Math.min(c.samples.length-1,center+range+1);i++){const a=c.samples[i],b=c.samples[i+1],dx=b.x-a.x,dz=b.z-a.z,u=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz||1))),half=a.half+(b.half-a.half)*u;distance=Math.min(distance,Math.hypot(x-a.x-dx*u,z-a.z-dz*u)-half);}

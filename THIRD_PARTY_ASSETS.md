@@ -36,3 +36,5 @@ The new 3D world uses **KayKit Medieval Hexagon Pack 1.0.1**, created by **Kay L
 Terrain, river ribbon, roads, lighting, worker figures, caravans and interface are game code. The official Kenney city-builder starter kit was evaluated during asset research; its modern buildings were not included in this medieval world.
 
 Spring wells, barrels, deer habitat markers, log rafts, fishing skiffs, moorings, fishing rods and bows added for survival are procedural models authored in game code. They reuse Three.js primitives and introduce no additional third-party asset downloads.
+
+The surface-water intake, travois, handcart and ox wagon details are procedural game models. Existing KayKit terrain objects, trees, buildings and bridges are reused under the notices above.

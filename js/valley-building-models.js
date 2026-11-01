@@ -38,6 +38,7 @@ export function installBuildingModels(models){
     models[name]=b.finish();
   }
   for(const [name,stone]of [['springWell',false],['stoneWell',true]]){const w=builder();w.part(new THREE.CylinderGeometry(1.3,1.4,.65,10),stone?'#a9a99a':'#96774e',0,.4,0);w.part(new THREE.CylinderGeometry(.95,.95,.04,10),'#4b9eac',0,.75,0);for(const x of [-1.15,1.15])w.box(.16,2.1,.16,'#765237',x,1.1,0);w.roof(3.1,2.8,.7,stone?'#ad6149':'#bb9a56',2.15);w.box(.16,.12,2.5,'#755333',0,1.8,0);w.part(new THREE.CylinderGeometry(.28,.22,.4,7),'#8b6944',1.5,.25,.7);models[name]=w.finish();}
+  const intake=builder();intake.box(2.6,.12,2.1,'#a17a4e',0,.15);for(const x of [-.8,.8])intake.part(new THREE.CylinderGeometry(.35,.28,.65,7),'#9b8051',x,.5,.2);intake.part(new THREE.CylinderGeometry(.25,.25,.03,7),'#5f9d9f',-.8,.84,.2);intake.part(new THREE.CylinderGeometry(.55,.65,.22,8),'#7a7564',0,.25,-.7);models.riverIntake=intake.finish();
   const landing=builder();for(let x=-1.3;x<=1.3;x+=.52)landing.box(.43,.13,3,'#a17a4e',x,.13,0);for(const x of [-1.4,1.4])landing.box(.13,.9,.13,'#725135',x,.45,1.3);landing.box(.6,.45,.55,'#a48a5a',1,.36,-.7);models.boatLanding=landing.finish();
   const raft=builder();for(let x=-.9;x<=.9;x+=.45){const log=new THREE.CylinderGeometry(.22,.22,3.4,6);log.rotateX(Math.PI/2);raft.part(log,'#92744f',x,.25,0);}models.logRaft=raft.finish();
   const skiff=builder();skiff.box(1.8,.22,3.6,'#8e623b',0,.2);for(const x of [-.95,.95])skiff.box(.16,.6,3.4,'#a37948',x,.5);skiff.box(1.8,.6,.16,'#9a7244',0,.5,-1.75);skiff.roof(1.8,.8,.6,'#a37948',.25);skiff.box(.12,3.8,.12,'#765737',0,1.9);skiff.box(1.7,2,.05,'#e1d3a4',.83,2.7);models.fishingSkiff=skiff.finish();
@@ -51,7 +52,7 @@ export function installBuildingModels(models){
 export function buildingAppearance(t,b){
   const tier=b.tier??0;
   if(b.type==='boat')return 'boatLanding';
-  if(b.type==='well')return tier<2?'springWell':'stoneWell';
+  if(b.type==='well')return 'riverIntake';
   if(b.type==='farm')return 'grain';
   if(b.type==='home')return ['thatchHouse','timberHouse','stoneHouse','stoneManor'][tier];
   if(b.type==='hall')return tier===0?'thatchHouse':tier===1?'timberHouse':tier===2?'stoneHouse':t.style==='castle'?'castle':'townhall';

@@ -20,13 +20,13 @@ export function createForestLayer(scene,landscape,object){
         const inst=new THREE.InstancedMesh(mesh.geometry,mesh.material,items.length),matrix=new THREE.Matrix4(),q=new THREE.Quaternion(),v=new THREE.Vector3(),scale=new THREE.Vector3();
         items.forEach((p,i)=>{v.set(p.x,landscape.height(p.x,p.z),p.z);q.setFromAxisAngle(new THREE.Vector3(0,1,0),p.angle);scale.setScalar(p.scale);matrix.compose(v,q,scale);matrix.multiply(mesh.matrixWorld);inst.setMatrixAt(i,matrix);if(p.tint)inst.setColorAt(i,new THREE.Color(p.tint).multiplyScalar(.94+landscape.hash(p.x,p.z,11)*.14));});
         inst.castShadow=true;inst.receiveShadow=true;inst.matrixAutoUpdate=false;inst.computeBoundingSphere();scene.add(inst);
-        if(clearable){records.push({inst,items});lods.push({inst,full:mesh.geometry,material:mesh.material,far,farMaterial});}
+        if(clearable){records.push({inst,items});lods.push({center:{x:items.reduce((n,p)=>n+p.x,0)/items.length,z:items.reduce((n,p)=>n+p.z,0)/items.length},inst,full:mesh.geometry,material:mesh.material,far,farMaterial});}
       }
     });
   }
   function clearRoads(state){const key=JSON.stringify(state.routes.map(r=>[r.id,r.open]));if(key===roadSignature)return;roadSignature=key;const opened=state.routes.filter(r=>r.open).map(r=>({a:state.towns.find(t=>t.id===r.a),b:state.towns.find(t=>t.id===r.b)})),zero=new THREE.Matrix4().makeScale(0,0,0);
     for(const {inst,items}of records){let changed=false;items.forEach((p,i)=>{if(!p.cleared&&opened.some(r=>landscape.distanceToRoad(p.x,p.z,r.a,r.b)<3.6)){p.cleared=true;inst.setMatrixAt(i,zero);changed=true;}});if(changed)inst.instanceMatrix.needsUpdate=true;}
   }
-  function setOverview(value){if(value===overview)return false;overview=value;for(const {inst,full,material,far,farMaterial}of lods){inst.geometry=value?far:full;inst.material=value?farMaterial:material;}return true;}
+  function setOverview(value,smooth=false,focus={x:0,z:0},size=100){let changed=false;overview=value;for(const {inst,full,material,far,farMaterial,center}of lods){const distant=value||smooth&&Math.hypot(center.x-focus.x,center.z-focus.z)>Math.max(12,size*.3),geometry=distant?far:full;if(inst.geometry!==geometry){inst.geometry=geometry;inst.material=distant?farMaterial:material;changed=true;}}return changed;}
   return {add,clearRoads,setOverview};
 }

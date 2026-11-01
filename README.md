@@ -1,5 +1,7 @@
 # 버들나루의 첫 겨울
 
+**주변 강물을 이용하고, 길과 다리를 마련해 교역합니다.** 생활·물·먹거리·교역을 바로 선택하고 실제 짐썰매·손수레·달구지의 물자를 확인하세요. [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?campaign=watershed&v=12) · [규칙과 실제 화면](docs/watershed-commerce.md) · [성능 측정](docs/watershed-performance.md).
+
 **마실 물부터 확보하고, 사냥·낚시·농사 중 먹거리 방침을 정하세요.** 주민이 숲과 물가에 가서 고기·생선을 가져오고, 목재로 배를 만들어 어로에 사용합니다. [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?v=11) · [규칙·실제 화면](docs/survival-settlement.md).
 
 **성능 병목을 줄이고 렌더링·이동·실행 주기를 역할별 모듈로 분리했습니다.** [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?v=10) · [원인·구조·실제 측정과 검증](docs/valley-performance-refactor.md).

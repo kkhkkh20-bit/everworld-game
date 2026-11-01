@@ -4,17 +4,17 @@ const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const s=E.world(7341),t=s.towns[0],raw=JSON.stringify(s);
 E.waterStatus(s,t);E.livelihoodStatus(t);E.villageObjective(s);assert.equal(JSON.stringify(s),raw,'inspection never advances RNG, food or water');
 assert.equal(E.count(t,'well'),0);assert.equal(L.boats(t),0);assert.ok(t.livelihood.fishing,'the isolated coastal camp has a reachable shore');
-assert.match(E.villageObjective(s).action,/샘터/);const inland=JSON.parse(raw);inland.towns[0].livelihood.fishing=null;const noShore=JSON.stringify(inland);assert.match(E.request(inland,'boat'),/물가/);assert.equal(JSON.stringify(inland),noShore);
+assert.match(E.villageObjective(s).action,/먹거리/);const inland=JSON.parse(raw);inland.towns[0].livelihood.fishing=null;const noShore=JSON.stringify(inland);assert.match(E.request(inland,'boat'),/물가/);assert.equal(JSON.stringify(inland),noShore);
 const old=E.fresh(42),before=JSON.parse(JSON.stringify(old));E.enableWater(old);E.enableLivelihood(old);
 assert.equal(old.time,before.time);assert.equal(old.rng,before.rng);assert.deepEqual(old.events,before.events);
 for(let i=0;i<old.towns.length;i++)for(const key of ['food','wood','stone','pop','buildings','project','workers'])assert.deepEqual(old.towns[i][key],before.towns[i][key],`upgrade preserves ${key}`);
 const upgraded=JSON.stringify(old);E.enableWater(old);E.enableLivelihood(old);assert.equal(JSON.stringify(old),upgraded,'save upgrades are idempotent');
-// One community-day: no wood means no newly drinkable raw spring water.
+// One community-day: no wood means no newly drinkable raw river water.
 const dry=JSON.parse(raw),d=dry.towns[0];d.wood=0;d.water.stock=0;W.daily(dry,d,()=>{});assert.equal(d.water.last.cleaned,0);assert.equal(d.water.shortage,1);assert.ok(W.workFactor(d)<1);
 const boiled=JSON.parse(raw),b=boiled.towns[0],wood=b.wood;W.daily(boiled,b,()=>{});near(wood-b.wood,b.water.last.cleaned*.02);near(b.water.ledger.initial+b.water.ledger.cleaned-b.water.ledger.drank-b.water.ledger.spilled,b.water.stock);
 const ration=JSON.parse(raw),r=ration.towns[0];r.water.policy='ration';near(W.status(ration,r).demand,W.need(r)*.65);near(W.workFactor(r),.88);
-const covered=JSON.parse(raw),c=covered.towns[0];c.buildings.push({type:'well',tier:0});c.wood=0;W.daily(covered,c,()=>{});assert.ok(c.water.last.cleaned>0);assert.equal(c.water.last.fuel,0);
-c.water.stock=1;assert.match(E.villageObjective(covered).action,/절수/);const normal=W.status(covered,c).sourceYield;covered.weather={ids:[c.id],factor:.5};assert.ok(W.status(covered,c).sourceYield<normal,'drought reduces a protected spring too');
+const covered=JSON.parse(raw),c=covered.towns[0];c.buildings.push({type:'well',tier:0});c.wood=0;W.daily(covered,c,()=>{});assert.equal(c.water.last.cleaned,0,'a storage facility does not make untreated river water drinkable without fuel');c.wood=5;W.daily(covered,c,()=>{});assert.ok(c.water.last.cleaned>0);near(c.water.last.fuel,c.water.last.cleaned*.015);
+c.water.stock=1;assert.match(E.villageObjective(covered).action,/절수/);const normal=W.status(covered,c).sourceYield;covered.weather={ids:[c.id],factor:.5};assert.ok(W.status(covered,c).sourceYield<normal,'drought reduces a improved river intake too');
 const initialPop=d.pop;for(let day=1;day<=9;day++){dry.day=day;W.daily(dry,d,()=>{});}assert.ok(d.pop<initialPop);assert.equal(initialPop-d.pop,d.ledger.waterDeaths);assert.equal(d.ledger.died,d.ledger.waterDeaths);
 // Controlled capture: food is carried, never credited at the hunting/fishing site.
 for(const [policy,source]of [['hunt','meat'],['fish','fish']]){
@@ -30,4 +30,5 @@ for(let i=0;i<1800;i++){E.step(s,.1);const crews=t.workers.filter(w=>w.transport
 assert.equal(E.count(t,'boat'),1);E.foodOrder(s,'fish');assert.notEqual(t.request,'boat','repeating a policy never queues an extra boat');assert.ok(boarded&&returned,'a real built boat is boarded and fish returns to the warehouse');assert.ok(t.livelihood.delivered.fish<=t.livelihood.caught.fish+1e-8);assert.ok(t.output.food>0);
 const a=JSON.parse(tripSave),bb=JSON.parse(tripSave);run(a,15);run(bb,15);assert.deepEqual(a,bb,'saved boat trips replay deterministically');assert.ok(E.validate(a));
 assert.equal(E.population(s),s.initialPopulation+s.towns.reduce((n,t)=>n+t.ledger.born-t.ledger.died,0));
-console.log('PASS survival: pure/idempotent migration, finite water ledger and fuel, drought/ration/deaths, real spring construction, finite hunted/fished cargo, actual boat construction and single-crew trips, delivery-only records, 30-day comparison, deterministic mid-trip saves');
+const poor=E.world(7341),p=poor.towns[0];p.project=null;p.food=200;p.wood=0;p.stone=30;assert.equal(E.foodOrder(poor,'fish'),'');assert.equal(p.project.type,'boat','an approved food-boat priority can collect its materials gradually');let helped=false,carried=false,midGather;for(let i=0;i<1200&&E.count(p,'boat')===0;i++){E.step(poor,.1);for(const worker of p.workers){if(worker.buildGather){helped=true;midGather??=JSON.stringify(poor);}if(worker.job==='build'&&worker.cargo?.kind==='wood'&&!worker.cargo.site)carried=true;}}assert.ok(helped&&carried,'a waiting builder physically harvests and hauls missing wood');assert.equal(E.count(p,'boat'),1);assert.ok(p.output.wood>0&&p.ledger.wood>0);const ga=JSON.parse(midGather),gb=JSON.parse(midGather);run(ga,10);run(gb,10);assert.deepEqual(ga,gb,'material-gathering construction crews also replay after save');
+console.log('PASS survival: pure/idempotent migration, finite water ledger and fuel, drought/ration/deaths, real intake construction, finite hunted/fished cargo, actual boat construction and single-crew trips, delivery-only records, 30-day comparison, deterministic mid-trip saves');

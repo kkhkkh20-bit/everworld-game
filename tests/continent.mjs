@@ -17,7 +17,7 @@ for(const seed of [7341,42]){
   let components=0;while(cells.size){components++;const first=cells.values().next().value,queue=[first];cells.delete(first);for(let i=0;i<queue.length;i++){const[x,z]=queue[i].split(',').map(Number);for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){const key=(x+dx)+','+(z+dz);if(cells.delete(key))queue.push(key);}}}
   assert.equal(components,1,'settlements and roads belong to one continent');
   for(const p of g.trees.flat())assert.notEqual(g.island.biome(p.x,p.z),'desert','the desert must not be covered by pine forest');
-  assert.match(E.villageObjective(s).action,/샘터/);assert.equal(JSON.stringify(s),before,'geography and objective reading preserve resources, RNG and history');
+  assert.match(E.villageObjective(s).action,/먹거리/);assert.equal(JSON.stringify(s),before,'geography and objective reading preserve resources, RNG and history');
   const closed=JSON.parse(before);for(const r of closed.routes)r.open=false;for(const t of closed.towns)t.faction=null;const closedMap=createLandscape(closed);for(let x=B.minX;x<B.maxX;x+=24)for(let z=B.minZ;z<B.maxZ;z+=24)assert.equal(closedMap.island.coastDistance(x,z),g.island.coastDistance(x,z),'political ownership and closed roads do not move the coast');
   console.log('PASS continent',seed,biomes,'trees',g.trees.flat().length,'peak',peak.toFixed(1));
 }

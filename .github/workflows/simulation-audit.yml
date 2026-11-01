@@ -23,11 +23,13 @@ jobs:
           node tests/valley-regions.cjs
           node tests/winter.cjs
           node tests/survival.cjs
+          node tests/watershed-trade.cjs
           node tests/architecture.cjs
           node tests/landscape.mjs
           node tests/continent.mjs
           node tests/terrain-roads.cjs
           node tests/valley-runtime.mjs
+          node tests/scene-motion.mjs
           node tests/valley-travel.cjs
           node tests/valley-legacy.cjs
           node tests/isekai.cjs

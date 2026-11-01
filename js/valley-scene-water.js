@@ -1,10 +1,13 @@
 import * as THREE from 'three';
 export function createWaterLayer(scene,state,elevation,object,inspect){
-  const records=[],pickables=[],poolGeo=new THREE.CylinderGeometry(1.35,1.5,.12,16),poolMat=new THREE.MeshStandardMaterial({color:'#5aabb4',roughness:.45}),rimGeo=new THREE.TorusGeometry(1.5,.17,5,16),rimMat=new THREE.MeshStandardMaterial({color:'#97896a'}),barrelGeo=new THREE.CylinderGeometry(.45,.45,.7,8),barrelMat=new THREE.MeshStandardMaterial({color:'#866440'}),fillGeo=new THREE.CylinderGeometry(.35,.35,.06,10);
-  for(const t of state.towns){if(!t.water)continue;const group=new THREE.Group();group.position.set(t.water.source.x,elevation(t.water.source.x,t.water.source.z)+.1,t.water.source.z);group.updateMatrix();group.matrixAutoUpdate=false;const pool=new THREE.Mesh(poolGeo,poolMat),rim=new THREE.Mesh(rimGeo,rimMat),barrel=new THREE.Mesh(barrelGeo,barrelMat),fill=new THREE.Mesh(fillGeo,poolMat);rim.rotation.x=Math.PI/2;rim.position.y=.1;barrel.position.set(2,.35,.6);fill.position.set(2,.7,.6);group.add(pool,rim,barrel,fill);for(const mesh of [pool,rim,barrel,fill]){mesh.userData.waterTown=t.id;pickables.push(mesh);}scene.add(group);records.push({t,group,fill,cover:null});}
+  const records=[],pickables=[],bucketGeo=new THREE.CylinderGeometry(.3,.23,.5,7),bucketMat=new THREE.MeshStandardMaterial({color:'#9b8051'});
+  for(const t of state.towns){
+    if(t.water?.source.kind!=='river')continue;
+    const group=new THREE.Group(),source=t.water.source;group.position.set(source.x,elevation(source.x,source.z)+.05,source.z);group.matrixAutoUpdate=false;group.updateMatrix();
+    const bucket=new THREE.Mesh(bucketGeo,bucketMat);bucket.position.set(-1,.25,0);bucket.userData.waterTown=t.id;group.add(bucket);pickables.push(bucket);scene.add(group);records.push({t,group});
+  }
   const label=document.createElement('button');label.className='water-source-label';label.onclick=()=>inspect(0);document.getElementById('townLabels').append(label);
-  function update(){let changed=false;for(const r of records){const needsCover=r.t.water.existingSupply&&!r.t.buildings.some(b=>b.type==='well'&&!b.ruined);if(needsCover&&!r.cover){r.cover=object('springWell',3);r.group.add(r.cover);r.cover.traverse(m=>{if(m.isMesh){m.userData.waterTown=r.t.id;pickables.push(m);}});changed=true;}}return changed;}
-  function render(size,project){for(const r of records){r.group.visible=size<=300&&r.t.pop>0;if(r.group.visible){const normal=Math.max(1,r.t.pop*.2*8);r.fill.position.y=.12+.6*Math.min(1,r.t.water.stock/normal);}}const own=state.towns[0],w=window.Valley.waterStatus(state,own);label.hidden=!w||size>140||own.pop<=0;if(!label.hidden){const text='💧 '+Math.floor(w.days)+'일분 · '+(w.protected?'정비한 샘터':'샘물 끓이는 중');if(label.textContent!==text)label.textContent=text;project(label,w.source.x,2,w.source.z);}}
-  function pick(raycaster){const hit=raycaster.intersectObjects(pickables,false).find(h=>h.object.visible&&records.some(r=>r.t.id===h.object.userData.waterTown&&r.group.visible));return hit?.object.userData.waterTown??null;}
-  return {update,render,pick};
+  function render(size,project){for(const r of records)r.group.visible=size<=300&&r.t.pop>0;const t=state.towns[0],w=window.Valley.waterStatus(state,t);label.hidden=!w||size>140||t.pop<=0;if(!label.hidden){const text='💧 '+w.source.name+' · 물긷는 곳';if(label.textContent!==text)label.textContent=text;project(label,w.source.x,2,w.source.z);}}
+  function pick(raycaster){const hit=raycaster.intersectObjects(pickables,false).find(h=>records.some(r=>r.t.id===h.object.userData.waterTown&&r.group.visible));return hit?.object.userData.waterTown??null;}
+  return {update:()=>false,render,pick};
 }

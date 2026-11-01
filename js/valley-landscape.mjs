@@ -1,6 +1,6 @@
-import './valley-world-geometry.js?v=2';
+import './valley-world-geometry.js?v=3';
 import './valley-polyline.js?v=1';
-import './valley-paths.js?v=3';
+import './valley-paths.js?v=4';
 export function createLandscape(state){
   const geometry=globalThis.ValleyGeometry.createGeometry(state);
   const Paths=globalThis.ValleyPaths,{all}=Paths.prepare(state);

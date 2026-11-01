@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {buildingAppearance} from './valley-building-models.js?v=3';
+import {buildingAppearance} from './valley-building-models.js?v=4';
 
 export function createBuildingLayer(scene,object,elevation,factionColor){
   const towns=new Map(),batches=[],metrics={townBuilds:0};

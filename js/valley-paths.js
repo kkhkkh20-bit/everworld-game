@@ -12,7 +12,7 @@ function bridgeSpans(points,g){const all=samples(points,1),spans=[];let start=nu
 }
 class Heap{constructor(){this.data=[];this.serial=0;}push(index,score){const a=this.data,n={index,score,serial:this.serial++};a.push(n);let i=a.length-1;while(i){const p=(i-1)>>1;if(a[p].score<n.score||a[p].score===n.score&&a[p].serial<n.serial)break;a[i]=a[p];i=p;}a[i]=n;}pop(){const a=this.data,first=a[0],last=a.pop();if(a.length){let i=0;while(i*2+1<a.length){let c=i*2+1;if(c+1<a.length&&(a[c+1].score<a[c].score||a[c+1].score===a[c].score&&a[c+1].serial<a[c].serial))c++;if(last.score<a[c].score||last.score===a[c].score&&last.serial<a[c].serial)break;a[i]=a[c];i=c;}a[i]=last;}return first?.index;}}
 function navigation(state){
-  const key=JSON.stringify([state.regional,state.bounds,state.towns.map(t=>[t.id,t.x,t.z,t.style]),state.plots.map(p=>[p.x,p.z])]);
+  const key=JSON.stringify([state.regional,state.hydrologyVersion||1,state.bounds,state.towns.map(t=>[t.id,t.x,t.z,t.style]),state.plots.map(p=>[p.x,p.z])]);
   if(caches.has(key))return caches.get(key);
   const g=Geometry.createGeometry(state),B=g.bounds,W=Math.ceil((B.maxX-B.minX)/CELL)+1,H=Math.ceil((B.maxZ-B.minZ)/CELL)+1,N=W*H;
   const elevations=new Float32Array(N),water=new Uint8Array(N),land=new Uint8Array(N),routeCache=new Map();
