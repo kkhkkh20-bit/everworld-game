@@ -25,6 +25,7 @@ jobs:
           node tests/architecture.cjs
           node tests/landscape.mjs
           node tests/continent.mjs
+          node tests/terrain-roads.cjs
           node tests/valley-legacy.cjs
           node tests/isekai.cjs
           node tests/frontier.cjs
