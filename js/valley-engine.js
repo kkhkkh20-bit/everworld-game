@@ -4,7 +4,18 @@
 const Paths=typeof module!=='undefined'?require('./valley-paths.js'):root.ValleyPaths;
 const courseCache=new WeakMap();
 function roadCourse(s,path){let c=courseCache.get(path);if(!c){c=Paths.course(s,path);if(c)courseCache.set(path,c);}return c;}
-function enableRoads(s){Paths.enable(s);for(const c of s.caravans){if(c.roadVersion===1)continue;const old=c.path||[c.from,c.to],points=old.map(id=>typeof id==='object'?id:town(s,id)),lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.z-points[i].z));let d=(c.progress||0)*lengths.reduce((a,b)=>a+b,0),i=0;while(i<lengths.length-1&&d>lengths[i])d-=lengths[i++];c.path=[{x:c.x,z:c.z},...old.slice(i+1)];c.progress=0;c.passed=0;c.roadVersion=1;}return s;}
+function enableRoads(s){
+  Paths.enable(s);
+  for(const c of s.caravans){
+    if(c.roadVersion===1){const first=c.path?.[0],next=c.path?.[1];if(first&&typeof first==='object'&&!first.rejoin&&!Paths.course(s,c.path))first.rejoin=Paths.rejoin(s,first,typeof next==='object'?next:Paths.depot(town(s,next)));continue;}
+    const old=c.path||[c.from,c.to],points=old.map(id=>typeof id==='object'?id:town(s,id)),lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.z-points[i].z));
+    let d=(c.progress||0)*lengths.reduce((a,b)=>a+b,0),i=0;while(i<lengths.length-1&&d>lengths[i])d-=lengths[i++];
+    const position={x:c.x,z:c.z},next=old[i+1],destination=typeof next==='object'?next:Paths.depot(town(s,next));
+    if(!Paths.between(s,position,destination))position.rejoin=Paths.rejoin(s,position,destination);
+    c.path=[position,...old.slice(i+1)];c.progress=0;c.passed=0;c.roadVersion=1;
+  }
+  return s;
+}
 const KEY = 'everworld_continent_v1',LEGACY_KEY='everworld_valley_v2';
 const PLANS = {
   home: { name: '주택', wood: 16, stone: 5, work: 6 },

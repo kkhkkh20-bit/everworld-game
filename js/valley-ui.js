@@ -1,4 +1,4 @@
-import { createView } from './valley-view.js?v=8';
+import { createView } from './valley-view.js?v=9';
 const E=window.Valley,$=id=>document.getElementById(id),query=new URLSearchParams(location.search),SAVE_KEY=query.get('campaign')==='legacy'?E.LEGACY_KEY:E.KEY;
 let s;try{const saved=JSON.parse(localStorage.getItem(SAVE_KEY));if(E.validate(saved)&&(!query.has('seed')||saved.seed===Number(query.get('seed'))))s=saved;}catch{}
 if(!s)s=query.get('campaign')==='legacy'?E.fresh(Number(query.get('seed'))||7341,true,false):E.world(Number(query.get('seed'))||7341);else E.regionalize(s,true);E.enableArchitecture(s);E.enableRoads(s);E.enableVillage(s);

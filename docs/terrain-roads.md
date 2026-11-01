@@ -1,6 +1,6 @@
 # 산과 강에 맞춘 흙길
 
-[실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?v=8) · [산자락의 길](../assets/screenshots/roads-mountain-1440.png) · [강과 산 사이](../assets/screenshots/roads-river-1440.png) · [대륙 전체](../assets/screenshots/roads-world-1440.png) · [휴대폰](../assets/screenshots/roads-mountain-390.png)
+[실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?v=9) · [산자락의 길](../assets/screenshots/roads-mountain-1440.png) · [강과 산 사이](../assets/screenshots/roads-river-1440.png) · [대륙 전체](../assets/screenshots/roads-world-1440.png) · [휴대폰](../assets/screenshots/roads-mountain-390.png)
 
 기존에는 마을 중심을 직선으로 연결하고 그 주변 산을 평평하게 깎았다. 길처럼 보이는 밝은 세력 경계선도 대륙을 대각선으로 가르고 있었다.
 
@@ -20,7 +20,7 @@
 
 ## 저장과 실제 결과
 
-기존 저장의 길에는 경로를 추가한다. 운송 중인 물자와 현재 좌표는 유지하고 그 자리에서 남은 길을 이어간다. 이미 새 경로를 사용하는 수레와 길은 재접속해도 유지한다. 이전 마을과 새 대륙의 저장 슬롯 구분도 그대로다.
+기존 저장의 길에는 경로를 추가한다. 운송 중인 물자와 현재 좌표는 유지하고 그 자리에서 남은 길을 이어간다. 옛 도로를 평평하게 만들던 산등성이에 남아 있는 수레는 출발 주변에서만 경사 제한을 완화한 합류 경로를 저장한다. 새로 건설하는 길에는 이 예외를 쓰지 않는다. 이미 새 경로를 사용하는 수레와 길은 재접속해도 유지한다. 이전 마을과 새 대륙의 저장 슬롯 구분도 그대로다.
 
 우회와 귀환에 시간이 실제로 들기 때문에 거래 도착, 공급 부족, 외교와 전쟁 발생 시점은 이전 직선 이동과 달라질 수 있다. 상대가 길 개척 뒤에도 곡물을 내보낼 수 있는지는 그때의 재고에 달렸다. 겨울 비교 검증은 가까운 곡창 마을과의 실제 거래·원조를 사용하고, 자율 전쟁은 여러 시드에서 확인한다. 모든 세계에 전쟁이 반드시 발생하도록 강제하지 않는다.
 
@@ -29,6 +29,7 @@
 - `node tests/terrain-roads.cjs`: 기존 33개 길, 산등성이를 피하는 4개 우회, 정렬된 19개 다리, 급경사·바다 회피, 지형 고정, 관찰 순서와 무관한 재현, 실제 수레 이동·물자 보존, 운송 중 저장 이행.
 - `node tests/landscape.mjs`, `node tests/continent.mjs`: 강·숲·마을 침수 방지와 대륙 형태, 오래 진행한 저장, 관찰 불변.
 - `node tests/terrain-roads-ui.cjs`: 1440px PC·390px 휴대폰의 산길·강변·전체 지도·세력 지도, 저장된 길 재접속, 일시정지 관찰 불변, 브라우저·에셋 오류 검사. 기본 스크린샷은 임시 폴더에 저장하며 `EVERWORLD_ROAD_ARTIFACTS`로 지정할 수 있다.
+- `node tests/road-save-ui.cjs`: 휴대폰 브라우저에서 옛 산등성이 교역 수레의 합류·도착·위치 연속성과 물자 보존.
 - 기존 첫겨울·세력·건축·물자/인구 회계·이전 모드와 주민 움직임·정지 화면 갱신 검사도 함께 실행한다.
 
 지형 탐색은 유한한 격자와 비용을 쓰는 시제품이다. 실제 토목 공사, 절토·성토량, 다리 하중, 선박 운송을 계산하는 시스템을 추가한 것은 아니다.

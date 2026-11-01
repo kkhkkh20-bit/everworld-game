@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createLandscape } from './valley-landscape.mjs?v=6';
+import { createLandscape } from './valley-landscape.mjs?v=7';
 import { mergeGeometries } from '../assets/vendor/three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from '../assets/vendor/three/addons/loaders/GLTFLoader.js';
 import { installBuildingModels, buildingAppearance } from './valley-building-models.js?v=2';
