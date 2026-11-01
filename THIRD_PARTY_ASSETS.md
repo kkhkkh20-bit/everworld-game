@@ -34,3 +34,5 @@ The new 3D world uses **KayKit Medieval Hexagon Pack 1.0.1**, created by **Kay L
 **Three.js 0.160.0** and its GLTFLoader/BufferGeometryUtils modules are vendored under `assets/vendor/three/`. Downloaded from the pinned npm distribution via jsDelivr. MIT license: [Three.txt](licenses/Three.txt). The rendering library and its loaders are unmodified.
 
 Terrain, river ribbon, roads, lighting, worker figures, caravans and interface are game code. The official Kenney city-builder starter kit was evaluated during asset research; its modern buildings were not included in this medieval world.
+
+Spring wells, barrels, deer habitat markers, log rafts, fishing skiffs, moorings, fishing rods and bows added for survival are procedural models authored in game code. They reuse Three.js primitives and introduce no additional third-party asset downloads.

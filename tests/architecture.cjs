@@ -10,11 +10,11 @@ const old=JSON.parse(snapshot);for(const t of old.towns){delete t.architecture;d
 assert.ok(E.validate(old));const inventory=old.towns.map(t=>[t.food,t.wood,t.stone,t.pop,t.buildings.map(b=>[b.type,b.day,b.x,b.z])]);const rng=old.rng,time=old.time;
 E.enableArchitecture(old);assert.deepEqual(old.towns.map(t=>[t.food,t.wood,t.stone,t.pop,t.buildings.map(b=>[b.type,b.day,b.x,b.z])]),inventory);assert.equal(old.rng,rng);assert.equal(old.time,time);assert.ok(old.towns.every(t=>t.architecture.learned===null));const migrated=JSON.stringify(old);E.enableArchitecture(old);assert.equal(JSON.stringify(old),migrated,'save migration is idempotent');
 const corrupt=JSON.parse(snapshot);corrupt.towns[0].architecture.level=9;assert.equal(E.validate(corrupt),false);
-const deferred=E.world(42);deferred.towns[0].request='mill';deferred.towns[0].project=null;E.policy(deferred,'policy','food');assert.equal(deferred.towns[0].project.type,'farm');assert.equal(deferred.towns[0].request,'mill','old locked priority is deferred while survival building proceeds');
+const deferred=E.world(42);deferred.towns[0].request='mill';deferred.towns[0].project=null;E.policy(deferred,'policy','food');assert.equal(deferred.towns[0].project.type,'well');assert.equal(deferred.towns[0].request,'mill','old locked priority is deferred while survival building proceeds');
 const natural=E.world(7341);E.winterChoice(natural,'self');run(natural,180);assert.ok(natural.towns[0].architecture.level>=1);assert.ok(natural.towns[0].architecture.learned>natural.foundingDay);assert.equal(natural.towns[0].buildings[0].tier,0,'learning does not instantly rebuild existing architecture');
 // A fully supplied fixture tests a real material-carrying renovation, not a UI repaint.
 const renovation=E.world(42),t=renovation.towns[0];E.winterChoice(renovation,'self');t.project=null;t.architecture.level=1;t.architecture.experience=0;t.food=5000;t.wood=500;t.stone=500;
-for(const type of ['home','home','farm','market','workshop'])t.buildings.push({type,tier:1,x:5+t.buildings.length*4,z:-4,day:renovation.day});
+for(const type of ['home','home','farm','market','workshop','well'])t.buildings.push({type,tier:1,x:5+t.buildings.length*4,z:-4,day:renovation.day});
 E.enableArchitecture(renovation);E.policy(renovation,'policy','balanced');assert.equal(t.project.upgrade,t.buildings[0].id);const id=t.project.upgrade,cost=E.projectCost(t.project),count=t.buildings.length;
 const total=(k)=>t[k]+t.workers.reduce((n,w)=>n+(w.cargo?.kind===k?w.cargo.q:0),0)+(t.project?.material[k]||0);
 const before={wood:total('wood'),stone:total('stone'),woodOutput:t.output.wood,stoneOutput:t.output.stone,woodUpkeep:t.ledger.upkeepWood,stoneUpkeep:t.ledger.upkeepStone};

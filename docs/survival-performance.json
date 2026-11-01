@@ -1,0 +1,833 @@
+{
+  "measuredAt": "2026-11-01T12:55:06.694181+00:00",
+  "baseCommit": "7f6520f",
+  "scenario": "water, hunting, fishing and boat feature working tree; new expedition and 900 days later",
+  "conditions": {
+    "browser": "Chromium 154, ANGLE Vulkan SwiftShader software GPU",
+    "viewport": [
+      390,
+      844
+    ],
+    "browserCpuThrottle": 4,
+    "cgroupCpuQuota": "400000 / 100000 (4 cores)",
+    "sampleWaitSeconds": 6,
+    "isolatedFromOtherHeavyTests": true
+  },
+  "records": [
+    {
+      "age": "fresh",
+      "mode": "paused-world",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13394,
+      "elapsedMs": 6481.20000000298,
+      "advancedDays": 0,
+      "frames": 364,
+      "p95FrameMs": 16.700000000000728,
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "functions": {
+        "scene.render": {
+          "calls": 183,
+          "ms": 3.399999901652336,
+          "max": 0.7999999970197678
+        }
+      },
+      "view": {
+        "renders": 17,
+        "trees": 6816,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 983,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 753394,
+        "shadows": false,
+        "geometryMemory": 275,
+        "roads": {
+          "builds": 388,
+          "merges": 1,
+          "chunkBuilds": 62,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 26,
+          "batches": 198
+        },
+        "markers": {
+          "draws": 4
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 355,
+        "size": 1891.8985130990504,
+        "focus": {
+          "x": -5.001349196875367,
+          "z": 4.999859458730176
+        }
+      }
+    },
+    {
+      "age": "fresh",
+      "mode": "pan-world",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13394,
+      "elapsedMs": 6159.79999999702,
+      "advancedDays": 0,
+      "frames": 241,
+      "p95FrameMs": 16.799999999999272,
+      "longTasks": 3,
+      "longTaskMaxMs": 874,
+      "functions": {
+        "scene.armies": {
+          "calls": 3,
+          "ms": 0,
+          "max": 0
+        },
+        "scene.livingVillage": {
+          "calls": 3,
+          "ms": 0,
+          "max": 0
+        },
+        "scene.webgl": {
+          "calls": 3,
+          "ms": 65.70000000298023,
+          "max": 25
+        },
+        "scene.labels": {
+          "calls": 3,
+          "ms": 11.599999994039536,
+          "max": 4.799999997019768
+        },
+        "scene.render": {
+          "calls": 123,
+          "ms": 89.20000000298023,
+          "max": 31.899999991059303
+        }
+      },
+      "view": {
+        "renders": 21,
+        "trees": 6816,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 982,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 751346,
+        "shadows": false,
+        "geometryMemory": 275,
+        "roads": {
+          "builds": 388,
+          "merges": 1,
+          "chunkBuilds": 62,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 26,
+          "batches": 198
+        },
+        "markers": {
+          "draws": 8
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 355,
+        "size": 1891.8985130990504,
+        "focus": {
+          "x": 54.99107798045334,
+          "z": 29.99628255454979
+        }
+      }
+    },
+    {
+      "age": "fresh",
+      "mode": "3x-world",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13394,
+      "elapsedMs": 6157,
+      "advancedDays": 6.699999999999619,
+      "frames": 320,
+      "p95FrameMs": 16.700000000004366,
+      "longTasks": 1,
+      "longTaskMaxMs": 729,
+      "functions": {
+        "scene.render": {
+          "calls": 162,
+          "ms": 183.70000004768372,
+          "max": 39.8999999910593
+        },
+        "ui.pulse": {
+          "calls": 14,
+          "ms": 18.500000059604645,
+          "max": 2
+        },
+        "ui.render": {
+          "calls": 14,
+          "ms": 29.10000005364418,
+          "max": 3.7000000029802322
+        },
+        "scene.armies": {
+          "calls": 65,
+          "ms": 0.9000000208616257,
+          "max": 0.4000000059604645
+        },
+        "scene.livingVillage": {
+          "calls": 65,
+          "ms": 5.100000008940697,
+          "max": 0.9000000059604645
+        },
+        "scene.politicalMap": {
+          "calls": 6,
+          "ms": 0.19999998807907104,
+          "max": 0.09999999403953552
+        },
+        "scene.updateTowns": {
+          "calls": 6,
+          "ms": 35.50000001490116,
+          "max": 16.5
+        },
+        "scene.labels": {
+          "calls": 6,
+          "ms": 20.19999997317791,
+          "max": 4.9000000059604645
+        },
+        "scene.webgl": {
+          "calls": 1,
+          "ms": 17.900000005960464,
+          "max": 17.900000005960464
+        },
+        "ui.save": {
+          "calls": 1,
+          "ms": 18.900000005960464,
+          "max": 18.900000005960464
+        }
+      },
+      "view": {
+        "renders": 26,
+        "trees": 6816,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 983,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 753394,
+        "shadows": false,
+        "geometryMemory": 275,
+        "roads": {
+          "builds": 388,
+          "merges": 1,
+          "chunkBuilds": 62,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 27,
+          "batches": 198
+        },
+        "markers": {
+          "draws": 77
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 355,
+        "size": 1891.906949830627,
+        "focus": {
+          "x": -4.9996678102277405,
+          "z": 5.000138412405455
+        }
+      }
+    },
+    {
+      "age": "fresh",
+      "mode": "3x-village",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13394,
+      "elapsedMs": 6747.4000000059605,
+      "advancedDays": 7.199999999999591,
+      "frames": 52,
+      "p95FrameMs": 233.40000000000146,
+      "longTasks": 53,
+      "longTaskMaxMs": 247,
+      "functions": {
+        "scene.politicalMap": {
+          "calls": 8,
+          "ms": 0.10000000894069672,
+          "max": 0.10000000894069672
+        },
+        "scene.updateTowns": {
+          "calls": 8,
+          "ms": 48.70000000298023,
+          "max": 20.80000001192093
+        },
+        "scene.armies": {
+          "calls": 53,
+          "ms": 1.199999988079071,
+          "max": 0.7999999970197678
+        },
+        "scene.livingVillage": {
+          "calls": 53,
+          "ms": 20.200000077486038,
+          "max": 4.299999997019768
+        },
+        "scene.webgl": {
+          "calls": 53,
+          "ms": 463.99999998509884,
+          "max": 12.799999997019768
+        },
+        "scene.labels": {
+          "calls": 8,
+          "ms": 28.900000005960464,
+          "max": 6.399999991059303
+        },
+        "scene.render": {
+          "calls": 53,
+          "ms": 854.8000000119209,
+          "max": 45.400000005960464
+        },
+        "ui.pulse": {
+          "calls": 13,
+          "ms": 12.399999991059303,
+          "max": 1.6000000089406967
+        },
+        "ui.render": {
+          "calls": 13,
+          "ms": 25,
+          "max": 4
+        },
+        "ui.save": {
+          "calls": 2,
+          "ms": 36.3999999910593,
+          "max": 19.299999997019768
+        }
+      },
+      "view": {
+        "renders": 91,
+        "trees": 6816,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 50,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 82632,
+        "shadows": true,
+        "geometryMemory": 273,
+        "roads": {
+          "builds": 389,
+          "merges": 2,
+          "chunkBuilds": 64,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 30,
+          "batches": 201
+        },
+        "markers": {
+          "draws": 79
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 356,
+        "size": 39.00533701382708,
+        "focus": {
+          "x": -292.9991704592855,
+          "z": -24.9999135892099
+        }
+      }
+    },
+    {
+      "age": "aged",
+      "mode": "paused-world",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13424,
+      "elapsedMs": 6523.5999999940395,
+      "advancedDays": 0,
+      "frames": 363,
+      "p95FrameMs": 16.799999999999272,
+      "longTasks": 0,
+      "longTaskMaxMs": 0,
+      "functions": {
+        "scene.render": {
+          "calls": 182,
+          "ms": 2.4999999701976776,
+          "max": 0.4000000059604645
+        }
+      },
+      "view": {
+        "renders": 17,
+        "trees": 6776,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 1017,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 827759,
+        "shadows": false,
+        "geometryMemory": 275,
+        "roads": {
+          "builds": 447,
+          "merges": 1,
+          "chunkBuilds": 62,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 26,
+          "batches": 231
+        },
+        "markers": {
+          "draws": 4
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 414,
+        "size": 1891.8990614206186,
+        "focus": {
+          "x": -5.001261510116186,
+          "z": 4.999868592762954
+        }
+      }
+    },
+    {
+      "age": "aged",
+      "mode": "pan-world",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13424,
+      "elapsedMs": 6157.199999988079,
+      "advancedDays": 0,
+      "frames": 207,
+      "p95FrameMs": 16.799999999999272,
+      "longTasks": 3,
+      "longTaskMaxMs": 918,
+      "functions": {
+        "scene.armies": {
+          "calls": 3,
+          "ms": 0.09999999403953552,
+          "max": 0.09999999403953552
+        },
+        "scene.livingVillage": {
+          "calls": 3,
+          "ms": 0,
+          "max": 0
+        },
+        "scene.webgl": {
+          "calls": 3,
+          "ms": 59.79999999701977,
+          "max": 22.799999997019768
+        },
+        "scene.labels": {
+          "calls": 3,
+          "ms": 10.900000005960464,
+          "max": 4.5
+        },
+        "scene.render": {
+          "calls": 105,
+          "ms": 78.40000000596046,
+          "max": 27.799999997019768
+        }
+      },
+      "view": {
+        "renders": 21,
+        "trees": 6776,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 1016,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 825711,
+        "shadows": false,
+        "geometryMemory": 275,
+        "roads": {
+          "builds": 447,
+          "merges": 1,
+          "chunkBuilds": 62,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 26,
+          "batches": 231
+        },
+        "markers": {
+          "draws": 8
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 414,
+        "size": 1891.8990614206186,
+        "focus": {
+          "x": 54.993432581281674,
+          "z": 29.99726361868347
+        }
+      }
+    },
+    {
+      "age": "aged",
+      "mode": "3x-world",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13424,
+      "elapsedMs": 6162.9000000059605,
+      "advancedDays": 7.39999999999327,
+      "frames": 358,
+      "p95FrameMs": 16.799999999995634,
+      "longTasks": 1,
+      "longTaskMaxMs": 90,
+      "functions": {
+        "scene.armies": {
+          "calls": 73,
+          "ms": 1.5,
+          "max": 0.6000000089406967
+        },
+        "scene.livingVillage": {
+          "calls": 73,
+          "ms": 3.7999999970197678,
+          "max": 1
+        },
+        "scene.render": {
+          "calls": 180,
+          "ms": 145.4000000357628,
+          "max": 9.800000011920929
+        },
+        "ui.pulse": {
+          "calls": 15,
+          "ms": 19.799999967217445,
+          "max": 2.1000000089406967
+        },
+        "ui.render": {
+          "calls": 15,
+          "ms": 53.799999967217445,
+          "max": 4.800000011920929
+        },
+        "scene.politicalMap": {
+          "calls": 7,
+          "ms": 0.20000000298023224,
+          "max": 0.10000000894069672
+        },
+        "scene.updateTowns": {
+          "calls": 7,
+          "ms": 22.30000001192093,
+          "max": 4.5
+        },
+        "scene.labels": {
+          "calls": 7,
+          "ms": 21.900000005960464,
+          "max": 4.299999997019768
+        },
+        "ui.save": {
+          "calls": 1,
+          "ms": 24.799999997019768,
+          "max": 24.799999997019768
+        }
+      },
+      "view": {
+        "renders": 25,
+        "trees": 6776,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 1017,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 827759,
+        "shadows": false,
+        "geometryMemory": 275,
+        "roads": {
+          "builds": 447,
+          "merges": 1,
+          "chunkBuilds": 62,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 26,
+          "batches": 231
+        },
+        "markers": {
+          "draws": 85
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 414,
+        "size": 1891.9069498400918,
+        "focus": {
+          "x": -4.999716688880128,
+          "z": 5.00011804630015
+        }
+      }
+    },
+    {
+      "age": "aged",
+      "mode": "3x-village",
+      "cpuRate": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "loadMs": 13424,
+      "elapsedMs": 6532,
+      "advancedDays": 7.599999999993088,
+      "frames": 52,
+      "p95FrameMs": 150,
+      "longTasks": 52,
+      "longTaskMaxMs": 238,
+      "functions": {
+        "ui.save": {
+          "calls": 2,
+          "ms": 33.20000000298023,
+          "max": 21.700000002980232
+        },
+        "scene.armies": {
+          "calls": 52,
+          "ms": 1.0000000149011612,
+          "max": 0.5
+        },
+        "scene.livingVillage": {
+          "calls": 52,
+          "ms": 14.19999997317791,
+          "max": 4.399999991059303
+        },
+        "scene.webgl": {
+          "calls": 52,
+          "ms": 452.09999999403954,
+          "max": 20
+        },
+        "scene.render": {
+          "calls": 52,
+          "ms": 761.6999999731779,
+          "max": 35.29999999701977
+        },
+        "scene.politicalMap": {
+          "calls": 8,
+          "ms": 0.8999999910593033,
+          "max": 0.7999999970197678
+        },
+        "scene.updateTowns": {
+          "calls": 8,
+          "ms": 23.099999979138374,
+          "max": 11.899999991059303
+        },
+        "scene.labels": {
+          "calls": 8,
+          "ms": 24.399999991059303,
+          "max": 7.0999999940395355
+        },
+        "ui.pulse": {
+          "calls": 13,
+          "ms": 20.899999991059303,
+          "max": 8.399999991059303
+        },
+        "ui.render": {
+          "calls": 13,
+          "ms": 35.099999979138374,
+          "max": 9.700000002980232
+        }
+      },
+      "view": {
+        "renders": 86,
+        "trees": 6776,
+        "channels": 5,
+        "bridges": 19,
+        "moving": false,
+        "territory": true,
+        "bounds": {
+          "minX": -340,
+          "maxX": 330,
+          "minZ": -270,
+          "maxZ": 280
+        },
+        "continent": true,
+        "biomes": [
+          "ocean",
+          "beach",
+          "desert",
+          "mountain",
+          "forest",
+          "grassland"
+        ],
+        "calls": 57,
+        "models": 33,
+        "assetModels": 18,
+        "buildingStyles": 15,
+        "triangles": 82747,
+        "shadows": true,
+        "geometryMemory": 275,
+        "roads": {
+          "builds": 447,
+          "merges": 1,
+          "chunkBuilds": 62,
+          "bridgeBuilds": 19,
+          "meshes": 62
+        },
+        "buildingUpdates": {
+          "townBuilds": 27,
+          "batches": 231
+        },
+        "markers": {
+          "draws": 87
+        },
+        "selection": null,
+        "workers": 156,
+        "buildings": 414,
+        "size": 39.00725627265125,
+        "focus": {
+          "x": -292.99887214596527,
+          "z": -24.999882514858
+        }
+      }
+    }
+  ]
+}

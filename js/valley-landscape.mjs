@@ -1,4 +1,4 @@
-import './valley-world-geometry.js?v=1';
+import './valley-world-geometry.js?v=2';
 import './valley-polyline.js?v=1';
 import './valley-paths.js?v=3';
 export function createLandscape(state){

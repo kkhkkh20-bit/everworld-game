@@ -19,7 +19,7 @@ const artifacts=process.env.EVERWORLD_ARCHITECTURE_ARTIFACTS||path.join(os.tmpdi
     if(width===390)await page.touchscreen.tap(stone.point.x,stone.point.y);else await page.mouse.click(stone.point.x,stone.point.y);
     assert.match(await page.locator('.building-owner').innerText(),/다른 마을의 건물/);assert.match(await page.locator('.material-badge').innerText(),/도시 건축/);
     await page.screenshot({path:path.join(artifacts,`architecture-city-${width}.png`)});
-    await page.locator('#closePanel').click();await page.evaluate(()=>__VALLEY__.openPanel('village'));await page.locator('[data-winter="self"]').click();if(!await page.evaluate(()=>__VALLEY__.paused()))await page.locator('#pause').click();
+    await page.locator('#closePanel').click();await page.evaluate(()=>__VALLEY__.openPanel('village'));await page.locator('#foodDirections > summary').click();await page.locator('[data-winter="self"]').click();if(!await page.evaluate(()=>__VALLEY__.paused()))await page.locator('#pause').click();
     await page.evaluate(()=>__VALLEY__.advance(180));await page.locator('#villageView').click();await page.waitForFunction(()=>!__VALLEY__.view().moving);
     await page.evaluate(()=>{const t=__VALLEY__.state().towns[0],b=t.buildings.find(b=>b.type==='farm');__VALLEY__.inspectBuilding(t.id,b.id);});
     assert.ok(await page.locator('[data-crew]').count()>0);await page.locator('[data-crew]').first().click();assert.match(await page.locator('#panelContent').innerText(),/공동 작업조/);await page.locator('[data-building-back]').click();assert.equal(await page.locator('#panelTitle').textContent(),'공동 농장');

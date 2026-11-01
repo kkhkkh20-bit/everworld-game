@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {buildingAppearance} from './valley-building-models.js?v=2';
+import {buildingAppearance} from './valley-building-models.js?v=3';
 
 export function createBuildingLayer(scene,object,elevation,factionColor){
   const towns=new Map(),batches=[],metrics={townBuilds:0};
@@ -8,7 +8,7 @@ export function createBuildingLayer(scene,object,elevation,factionColor){
     function queue(name,span,x,z,rotation,tint,ruin,ref){const key=name+':'+span;if(!placements.has(key))placements.set(key,{name,span,items:[]});placements.get(key).items.push({x,z,rotation,tint,ruin,ref});}
     t.buildings.forEach((b,i)=>{
       const ref={townId:t.id,buildingId:b.id},span=b.type==='hall'?(b.tier>=2?7.6:4.3):b.type==='farm'?5.1:b.type==='mill'?6.5:4.6;
-      queue(buildingAppearance(t,b),span,t.x+b.x,t.z+b.z,(i%4)*Math.PI/2,b.ruined||!t.pop?'#8d9188':b.vacant?'#b0b0a1':'#ffffff',b.ruined||!t.pop,ref);
+      queue(buildingAppearance(t,b),span,t.x+b.x,t.z+b.z,b.type==='boat'&&t.livelihood?.fishing?Math.atan2(t.livelihood.fishing.water.x-t.livelihood.fishing.bank.x,t.livelihood.fishing.water.z-t.livelihood.fishing.bank.z):(i%4)*Math.PI/2,b.ruined||!t.pop?'#8d9188':b.vacant?'#b0b0a1':'#ffffff',b.ruined||!t.pop,ref);
       if(t.id===0&&t.pop>0)queue('ownPlot',5.7,t.x+b.x,t.z+b.z,0,'#ffffff',false,ref);
       if(t.pop>0&&!b.ruined)queue(t.id===0?'ownBanner':'townBanner',1.25,t.x+b.x+2.4,t.z+b.z+2.6,0,t.id===0?'#e6bd55':factionColor(t),false,ref);
     });

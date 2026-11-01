@@ -47,7 +47,7 @@ function createGeometry(state) {
   const plotFootprints=state.plots.map(p=>{const near=[...state.towns].sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0];return {x:p.x,z:p.z,r:5.5,anchorX:near.x,anchorZ:near.z};});
   // Reserve normal automatic building plots so rivers stay fixed as villages grow.
   const obstacles=[...state.towns.map(t=>({x:t.x,z:t.z,r:t.id===0?23:26,anchorX:t.x,anchorZ:t.z})),...plotFootprints];
-  const footprints=[...clearings,...plotFootprints,...state.towns.flatMap(t=>[{x:t.x+14,z:t.z-8,r:3.5},{x:t.x+11,z:t.z+12,r:3.5},...t.buildings.map(b=>({x:t.x+b.x,z:t.z+b.z,r:b.type==='hall'?6:4.5}))])];
+  const footprints=[...state.towns.filter(t=>t.water).map(t=>({x:t.water.source.x,z:t.water.source.z,r:3})),...clearings,...plotFootprints,...state.towns.flatMap(t=>[{x:t.x+14,z:t.z-8,r:3.5},{x:t.x+11,z:t.z+12,r:3.5},...t.buildings.map(b=>({x:t.x+b.x,z:t.z+b.z,r:b.type==='hall'?6:4.5}))])];
   function constrained(axis,at,center,half,raw){
     for(const candidate of [half,half*.85,half*.65,half*.45,half*.3,1.5]){let low=-Infinity,high=Infinity;
       for(const o of obstacles){const along=axis==='z'?o.z:o.x,perp=axis==='z'?o.x:o.z,d=Math.abs(along-at),radius=o.r+candidate+2;if(d>=radius)continue;const clearance=Math.sqrt(radius*radius-d*d),anchorAlong=axis==='z'?o.anchorZ:o.anchorX,anchorPerp=axis==='z'?o.anchorX:o.anchorZ;if(anchorPerp<raw(anchorAlong))low=Math.max(low,perp+clearance);else high=Math.min(high,perp-clearance);}

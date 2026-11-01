@@ -2,6 +2,8 @@
 (function (root) {
 'use strict';
 const Paths=typeof module!=='undefined'?require('./valley-paths.js'):root.ValleyPaths;
+const Livelihood=typeof module!=='undefined'?require('./valley-livelihood.js'):root.ValleyLivelihood;
+const Water=typeof module!=='undefined'?require('./valley-water.js'):root.ValleyWater;
 const Travel=typeof module!=='undefined'?require('./valley-travel.js'):root.ValleyTravel;
 const travel=Travel.createTravelCache(Paths),roadCourse=travel.course,travelCourse=travel.line;
 function enableRoads(s){
@@ -18,6 +20,8 @@ function enableRoads(s){
 }
 const KEY = 'everworld_continent_v1',LEGACY_KEY='everworld_valley_v2';
 const PLANS = {
+  boat:{name:'통나무배·계류장',wood:8,stone:0,work:4},
+  well: { name:'샘터 정비',wood:4,stone:2,work:3 },
   home: { name: '주택', wood: 16, stone: 5, work: 6 },
   farm: { name: '공동 농장', wood: 12, stone: 2, work: 5 },
   workshop: { name: '공동 작업장', wood: 26, stone: 10, work: 8, minTech:1 },
@@ -62,11 +66,11 @@ function exchangeKnowledge(s,a,b){
 }
 function buildingInfo(s,townId,buildingId){
   const t=town(s,townId),b=t?.buildings.find(b=>b.id===buildingId);if(!b)return null;
-  const names={hall:'마을 중심',home:'주택',farm:'공동 농장',workshop:'공동 작업장',market:'교역 시장',mill:'방앗간'};
-  const roles={hall:'마을의 물건을 모으고 함께 지내는 곳이에요.',home:'주민이 잠자리를 나누어 쓰는 집이에요.',farm:'함께 먹을 곡물을 기르는 곳이에요.',workshop:'나무와 돌을 더 잘 다듬도록 돕는 곳이에요.',market:'다른 마을과 오가는 거래를 살펴보는 곳이에요.',mill:'먹거리 생산을 돕고 더 많이 보관하는 곳이에요.'};
+  const names={boat:'배와 계류장',well:'정비한 샘터',hall:'마을 중심',home:'주택',farm:'공동 농장',workshop:'공동 작업장',market:'교역 시장',mill:'방앗간'};
+  const roles={boat:'주민들이 배를 대고 어로를 준비하는 곳이에요. 배 한 척에는 한 작업조가 탑니다.',well:'마을 사람들이 함께 마실 물을 얻는 곳이에요. 샘을 덮고 오염을 막아 땔감으로 물을 끓이는 부담을 줄여요.',hall:'마을의 물건을 모으고 함께 지내는 곳이에요.',home:'주민이 잠자리를 나누어 쓰는 집이에요.',farm:'함께 먹을 곡물을 기르는 곳이에요.',workshop:'나무와 돌을 더 잘 다듬도록 돕는 곳이에요.',market:'다른 마을과 오가는 거래를 살펴보는 곳이에요.',mill:'먹거리 생산을 돕고 더 많이 보관하는 곳이에요.'};
   const homes=t.buildings.filter(x=>x.type==='home'&&!x.ruined),homeIndex=homes.indexOf(b),beds=(b.type==='hall'||b.type==='home')&&!b.ruined&&t.pop>0?6:0;
   const occupants=b.ruined?0:b.type==='hall'?Math.min(6,t.pop):b.type==='home'?Math.max(0,Math.min(6,t.pop-6-homeIndex*6)):0;
-  const workers=t.workers.filter(w=>{if(b.ruined)return false;if(b.type==='hall')return !!w.cargo&&!w.cargo.site;if(b.type==='farm'){const farms=t.buildings.filter(x=>x.type==='farm'&&!x.ruined);return w.job==='food'&&farms[0]?.id===b.id;}if(b.type==='workshop')return w.job==='wood'||w.job==='stone';return false;});
+  const workers=t.workers.filter(w=>{if(b.ruined)return false;if(b.type==='hall')return !!w.cargo&&!w.cargo.site;if(b.type==='boat'){const crews=t.workers.filter(w=>w.transport==='boat'),docks=t.buildings.filter(b=>b.type==='boat'&&!b.ruined);return crews[docks.indexOf(b)]===w;}if(b.type==='farm'){const farms=t.buildings.filter(x=>x.type==='farm'&&!x.ruined);return w.job==='food'&&(!w.foodTask||w.foodTask.method==='farm')&&(!w.cargo?.source||['grain','wild'].includes(w.cargo.source))&&farms[0]?.id===b.id;}if(b.type==='workshop')return w.job==='wood'||w.job==='stone';return false;});
   return {town:t,building:b,name:names[b.type],role:roles[b.type],tech:{...TECH[b.tier??0],material:b.type==='farm'?'경작지·공동 수확터':TECH[b.tier??0].material},level:b.tier??0,beds,occupants,workers,status:b.ruined?'폐쇄 · 수리 필요':b.vacant?'빈집':t.pop<=0?'남은 주민 없음':'사용 중',shared:b.type==='workshop',caravans:s.caravans.filter(c=>(c.from===t.id||c.to===t.id)&&!c.people&&!c.tribute&&!c.aid)};
 }
 function random(s) { s.rng = (Math.imul(s.rng,1664525)+1013904223)>>>0; return s.rng/4294967296; }
@@ -82,6 +86,8 @@ function log(s, ids, text, type='life', meta={}) {
 }
 function slot(t, type) {
   const n=t.buildings.filter(b=>b.type!=='hall').length;
+  if(type==='boat'&&t.livelihood?.fishing)return {x:(t.livelihood.fishing.landing||t.livelihood.fishing.bank).x-t.x,z:(t.livelihood.fishing.landing||t.livelihood.fishing.bank).z-t.z};
+  if(type==='well')return {x:0,z:-12};
   if(type==='farm') return {x:-10-count(t,'farm')*5,z:8};
   if(type==='mill') return {x:-14,z:0};
   if(type==='market') return {x:0,z:8};
@@ -122,19 +128,20 @@ function decide(s,t) {
   if(t.pop<=0)return;
   const days=reserveDays(t),critical=days<10,workers=days<t.reserve||t.policy==='food'?3:2;
   const jobs=Array(critical?4:workers).fill('food');
-  if(t.project&&(!critical||t.project.type==='farm'))jobs.push('build');
+  if(t.project&&(!critical||['farm','well','boat'].includes(t.project.type)))jobs.push('build');
   if(t.fertility<.9)jobs.push(t.woodYield>t.stoneYield?'wood':'stone');
   while(jobs.length<6){const woodNeed=t.wood/(maintenance(t,'wood')+1),stoneNeed=t.stone/(maintenance(t,'stone')+.4);jobs.push(woodNeed<stoneNeed?'wood':'stone');if(jobs.length===5&&t.wood>6&&t.stone<8)jobs[4]='stone';}
   if(t.policy==='trade'&&!critical){jobs[4]=t.wood<6&&t.stone<3?'stone':'wood';if(!t.project)jobs[5]='wood';}
   if(t.policy==='growth'&&!critical&&days>22&&t.project)jobs[3]='build';
-  t.workers.forEach((w,i)=>{if(w.cargo){w.nextJob=jobs[i];}else if(w.job!==jobs[i]){w.job=jobs[i];w.work=0;w.nextJob=null;}});
+  t.workers.forEach((w,i)=>{if(w.cargo||w.foodTask){w.nextJob=jobs[i];}else if(w.job!==jobs[i]){w.job=jobs[i];w.work=0;w.nextJob=null;}});
   if(!t.project&&t.pop>2){
     const ruined=t.buildings.findIndex(b=>b.ruined);
     if(ruined>=0&&t.wood>8&&t.stone>3){const b=t.buildings[ruined];t.project={type:b.type,x:b.x,z:b.z,material:{wood:0,stone:0},reserved:{wood:0,stone:0},work:0,repair:ruined};return;}
     let next=t.request;if(next&&(t.architecture?.level??0)<(PLANS[next]?.minTech||0))next=null;
+    if(!next&&t.water&&!Water.protectedAccess(t)&&t.water.policy!=='ration')next='well';
     if(!next){if(count(t,'farm')<Math.min(3,Math.ceil(t.land/35))&&days<35)next='farm';else if(t.pop>capacity(t)*.85&&days>(s.village&&t.id===0?17:24))next='home';else if(!count(t,'market')&&hasConnection(s,t.id)&&days>18)next='market';else if(!count(t,'workshop')&&days>24)next='workshop';else if(!count(t,'mill')&&days>32)next='mill';}
     if(next&&(t.architecture?.level??0)<(PLANS[next].minTech||0))next=null;
-    if(next&&!(s.village&&t.id===0&&(t.expedition||(s.village.plan?.kind==='trade'&&s.village.plan.lastShipment<0))&&next!=='farm')&&t.wood>=PLANS[next].wood*.6&&t.stone>=PLANS[next].stone*.5){if(plan(s,t,next)&&t.request===next)t.request=null;}
+    if(next&&!(s.village&&t.id===0&&(t.expedition||(s.village.plan?.kind==='trade'&&s.village.plan.lastShipment<0))&&!['farm','well','boat'].includes(next))&&t.wood>=PLANS[next].wood*.6&&t.stone>=PLANS[next].stone*.5){if(plan(s,t,next)&&t.request===next)t.request=null;}
     if(!next&&!t.project&&days>32&&t.pop<=capacity(t)){
       const b=t.buildings.find(b=>!b.ruined&&b.type!=='farm'&&(b.tier??0)<(t.architecture?.level??0));
       if(b){const upgrade={type:b.type,tier:b.tier+1,upgrade:b.id,x:b.x,z:b.z,material:{wood:0,stone:0},reserved:{wood:0,stone:0},work:0},cost=projectCost(upgrade);if(t.wood>cost.wood+24&&t.stone>cost.stone+12){t.project=upgrade;log(s,[t.id],t.name+'이 '+(b.type==='hall'?'마을 중심':PLANS[b.type].name)+'을 '+TECH[upgrade.tier].name+'으로 고쳐 짓기 시작했다.','build');}}
@@ -143,14 +150,15 @@ function decide(s,t) {
 }
 function worker(s,t,w,dt) {
   if(t.pop<=0){w.phase='정착지 비어 있음';return;}if(w.journey){w.phase='숲길을 따라 마을로 돌아오는 중';if(follow(w,w.journey,dt))delete w.journey;return;}if(t.expedition&&t.expedition.phase!=='waiting'&&w.id===5){const ex=t.expedition;w.phase=ex.phase==='scout'?'이웃을 찾아 정찰 중':'숲길을 개척하는 중';if(!ex.journey){ex.waypoints ||= Paths.between(s,Paths.depot(t),Paths.depot(town(s,ex.target)));ex.journey={points:Paths.between(s,{x:w.x,z:w.z},Paths.depot(town(s,ex.target)))||ex.waypoints,distance:0};}follow(w,ex.journey,dt);return;}
-  const crew=Math.max(0,t.pop-t.deployed)*.5/6*(.65+t.condition*.35)*Math.max(.75,1-t.starved*.012);
+  const crew=Math.max(0,t.pop-t.deployed)*.5/6*(.65+t.condition*.35)*Math.max(.75,1-t.starved*.012)*Water.workFactor(t);
   const depot={x:t.x+(w.id%2)*.6,z:t.z+4.4};
+  if(Livelihood.worker(s,t,w,dt,{move,crew,workSite,count,foodFactor}))return;
   if(w.cargo){
     const c=w.cargo,p=c.site&&t.project?{x:t.x+t.project.x,z:t.z+t.project.z+3.4}:depot;
-    w.phase=c.site?'공사장에 '+(c.kind==='wood'?'목재':'석재')+' 운반':'창고로 '+({food:'곡물',wood:'목재',stone:'석재'}[c.kind])+' 운반';
+    w.phase=c.site?'공사장에 '+(c.kind==='wood'?'목재':'석재')+' 운반':'창고로 '+(c.source?Livelihood.names[c.source]:{food:'먹거리',wood:'목재',stone:'석재'}[c.kind])+' 운반';
     if(move(w,p,dt)){
       if(c.site&&t.project&&t.project.type===c.site){t.project.material[c.kind]+=c.q;t.project.reserved[c.kind]-=c.q;}
-      else {t[c.kind]+=c.q;if(!c.site){t.ledger[c.kind]+=c.q;w.delivered+=c.q;}}
+      else {t[c.kind]+=c.q;if(!c.site){t.ledger[c.kind]+=c.q;w.delivered+=c.q;Livelihood.deposit(s,t,c,log);}}
       w.cargo=null;w.work=0;if(w.nextJob){w.job=w.nextJob;w.nextJob=null;}
     }return;
   }
@@ -195,7 +203,7 @@ function foodFactor(s,t){
   const weather=s.weather&&s.weather.until>s.day&&s.weather.ids.includes(t.id)?s.weather.factor:1;
   return (t.fertility+bonus)*Math.min(1,land/Math.max(1,t.pop))*[1.05,1.3,1.12,.55][season(s)]*weather;
 }
-function maintenance(t,k){const n=t.buildings.filter(b=>!b.ruined).length;return k==='wood'?n*.045+(t.pop*.014*(t.season===3?1.8:1)):n*.018;}
+function maintenance(t,k){const n=t.buildings.filter(b=>!b.ruined&&b.type!=='well').length;return k==='wood'?n*.045+(t.pop*.014*(t.season===3?1.8:1)):n*.018;}
 
 function storage(t){return Math.max(20,t.pop*10+count(t,'farm')*35+count(t,'mill')*80);}
 function population(s){return s.towns.reduce((n,t)=>n+t.pop,0)+s.caravans.reduce((n,c)=>n+(c.people||0),0);}
@@ -376,9 +384,10 @@ function daily(s){for(const t of s.towns)t.season=season(s);weatherDaily(s);armi
     if(t.pop<=0){if(t.state!=='abandoned'){t.state='abandoned';log(s,[t.id],t.name+'에 남은 주민이 없다. 빈 정착지가 되었다.','ruin',{story:t.needStory});}t.condition=Math.max(.1,t.condition-.002);if(s.day%30===0){const b=t.buildings.find(b=>!b.ruined);if(b)b.ruined=true;}continue;}
     if(t.liege!==null&&town(s,t.liege).pop<=0){const former=t.liege;t.liege=null;t.faction=null;t.taxRate=0;t.taxAccrued=0;log(s,[t.id,former],t.name+'의 보호자가 사라져 조공 관계가 끝났다. 독립된 생계를 다시 꾸려야 한다.','pact');}
     if(s.regional&&t.liege!==null)t.faction=town(s,t.liege).faction??null;
+    Water.daily(s,t,log);Livelihood.daily(s,t);
     const need=foodNeed(t),eaten=Math.min(t.food,need);t.food-=eaten;t.ledger.eaten+=eaten;t.starved=eaten+1e-8<need?t.starved+1:Math.max(0,t.starved-1);t.forest=Math.min(1000,t.forest+1.2);
     const spoil=Math.min(t.food,t.food*.002+Math.max(0,t.food-storage(t))*.15);t.food-=spoil;t.ledger.spoiled+=spoil;
-    let supplied=1;for(const key of ['wood','stone']){const want=maintenance(t,key),used=Math.min(t[key],want);t[key]-=used;t.ledger[key==='wood'?'upkeepWood':'upkeepStone']+=used;if(want>0)supplied=Math.min(supplied,used/want);}
+    let supplied=1;for(const key of ['wood','stone']){const want=Math.max(0,maintenance(t,key)-(key==='wood'?(t.water?.last.fuel||0):0)),used=Math.min(t[key],want);t[key]-=used;t.ledger[key==='wood'?'upkeepWood':'upkeepStone']+=used;if(want>0)supplied=Math.min(supplied,used/want);}
     t.condition=Math.max(.1,Math.min(1,t.condition+(supplied>.98?.004:-.004*(1-supplied))));
     if(t.condition<.45&&s.day%30===0){const b=t.buildings.find(b=>b.type!=='hall'&&!b.ruined);if(b){b.ruined=true;t.ledger.ruins++;log(s,[t.id],t.name+'의 '+PLANS[b.type].name+'이 유지 자재 부족으로 폐쇄되었다.','decline',{story:t.needStory});}}
     if(t.starved>8&&s.day%7===0&&t.pop>t.deployed){t.pop--;t.ledger.died++;t.happiness=Math.max(5,t.happiness-7);log(s,[t.id],t.name+' · 식량 부족으로 주민 한 명을 잃었다.','crisis',{story:t.needStory});}
@@ -427,7 +436,7 @@ function regionalize(s,legacy=false){
   if(legacy){s.initialPopulation+=added;const own=town(s,0);if(own)own.faction=own.liege!==null?town(s,own.liege).faction:null;recordSample(s);log(s,s.factions.map(f=>f.seat),'주변 네 지역의 지도와 세력 관계를 관찰하기 시작했다. 새로 관찰한 마을의 이전 사건 기록은 없다.','discovery');}
   return s;
 }
-function villageSnapshot(s){const t=town(s,0);return {day:s.day,pop:t.pop,food:t.food,wood:t.wood,stone:t.stone,foodDays:reserveDays(t),homes:count(t,'home'),built:t.ledger.built,born:t.ledger.born,died:t.ledger.died,tax:t.ledger.tax,imports:t.ledger.importedFood||0,aid:t.ledger.aidReceived||0,liege:t.liege};}
+function villageSnapshot(s){const t=town(s,0);return {waterDays:t.water?Water.status(s,t).days:null,waterProtected:Water.protectedAccess(t),foodSources:t.livelihood?{...t.livelihood.delivered}:null,boats:Livelihood.boats(t),day:s.day,pop:t.pop,food:t.food,wood:t.wood,stone:t.stone,foodDays:reserveDays(t),homes:count(t,'home'),built:t.ledger.built,born:t.ledger.born,died:t.ledger.died,tax:t.ledger.tax,imports:t.ledger.importedFood||0,aid:t.ledger.aidReceived||0,liege:t.liege};}
 function enableVillage(s){if(s.village)return s;const t=town(s,0),year=Math.floor(s.day/360),start=year*360+270,end=year*360+360;
   const before=villageSnapshot(s),id=story(s,[0],s.day-s.foundingDay<5?'버들나루의 첫 겨울':'버들나루의 겨울 준비','관찰 시작: '+t.pop+'명 · 식량 '+Math.floor(reserveDays(t))+'일분. 물자를 직접 마련하고 이웃과 조건을 정한다.','village');
   s.village={version:1,first:s.day-s.foundingDay<5,started:s.day,winterStart:start,winterEnd:end,story:id,before,plan:null,actions:[],milestones:Object.fromEntries(Object.entries({farm:count(t,'farm')>0,home:count(t,'home')>0,connection:hasConnection(s,0),settlement:count(t,'home')>=2}).filter(([,ready])=>ready).map(([key])=>[key,s.day])),status:s.day>=start?'winter':'preparing',result:null};
@@ -443,10 +452,20 @@ function villageQuote(s,id,kind='trade'){
 function incoming(s){return s.caravans.filter(c=>c.to===0&&c.phase==='out'&&c.kind==='food'&&c.q>0).map(c=>{const p=pathPosition(s,c.path||[c.from,c.to],c.progress);return {id:c.id,from:c.from,q:c.q,days:Math.ceil((1-c.progress)*p.total/5),waiting:!!c.wait,aid:!!c.aid};}).sort((a,b)=>a.days-b.days);}
 function projectStatus(t){if(!t.project)return {label:count(t,'home')?'다음 생활 기반 준비':'주택을 지을 비축 마련',reason:'',progress:0,missing:{wood:0,stone:0}};const p=t.project,c=projectCost(p),missing={wood:Math.max(0,Math.ceil(c.wood-p.material.wood-p.reserved.wood-t.wood)),stone:Math.max(0,Math.ceil(c.stone-p.material.stone-p.reserved.stone-t.stone))},builder=t.workers.some(w=>w.job==='build'||w.nextJob==='build');return {label:c.name,reason:missing.wood?'목재 '+missing.wood+' 부족':missing.stone?'석재 '+missing.stone+' 부족':!builder?'식량 확보 뒤 공사 재개':p.material.wood<c.wood||p.material.stone<c.stone?'자재 운반 중':'짓는 중',progress:Math.min(1,p.work/c.work),missing};}
 function villageStatus(s){const t=town(s,0),d=diagnose(s,t),v=s.village;return {pop:t.pop,foodDays:reserveDays(t),trend:d.trend,homes:count(t,'home'),beds:capacity(t),stage:count(t,'market')&&count(t,'home')>=2?'교역촌':count(t,'home')>=2?'정착촌':count(t,'home')?'첫 주택':'야영지',project:projectStatus(t),incoming:incoming(s),winterDays:Math.max(0,Math.floor(s.day/360)*360+(season(s)===3?360:270)-s.day),winter:season(s)===3,starving:t.starved>0,claim:s.negotiations.find(n=>n.to===0&&!n.done&&n.stage==='request'&&!sameFaction(s,t,town(s,n.from)))||null,offer:s.offers.find(o=>o.to===0&&o.status==='pending')||null};}
+function foodOrder(s,kind){enableVillage(s);Water.enable(s);Livelihood.enable(s);const t=town(s,0);if(!['balanced','hunt','fish','farm'].includes(kind))return '알 수 없는 먹거리 방침입니다';if(kind==='fish'&&!t.livelihood.fishing)return '가까운 물가를 찾지 못했습니다';const before=villageSnapshot(s);t.livelihood.policy=kind;t.livelihood.chosen=true;if(kind==='fish'&&!Livelihood.boats(t)&&t.project?.type!=='boat')t.request='boat';if(kind==='farm'&&!count(t,'farm')&&t.project?.type!=='farm')t.request='farm';decide(s,t);s.village.actions.push({kind,before,due:s.day+30,after:null});s.village.actions=s.village.actions.slice(-12);log(s,[0],t.name+' · '+({balanced:'농사·채집·사냥·어로를 상황에 맞게 나눈다.',hunt:'숲의 사냥감을 이용하되 줄어들면 다른 먹거리로 전환한다.',fish:'물가에서 낚시하고 자재를 모아 어로용 배를 준비한다.',farm:'먹거리 작업조를 농사·채집에 집중한다.'})[kind],'decision',{story:s.village?.story});return '';}
+function survivalOrder(s,kind){
+  enableVillage(s);Water.enable(s);const t=town(s,0);if(t.pop<=0)return '마을에 남은 주민이 없습니다';if(!['water','ration','collect','food','shelter'].includes(kind))return '알 수 없는 방침입니다';
+  const before=villageSnapshot(s);
+  if(kind==='water'){t.water.policy='secure';if(!Water.protectedAccess(t)&&t.project?.type!=='well'){t.request='well';const p=t.project;if(p&&!p.upgrade&&p.work===0&&Object.values(p.material).every(q=>q===0)&&Object.values(p.reserved).every(q=>q===0)){t.project=null;}}}
+  if(kind==='ration')t.water.policy='ration';if(kind==='collect')t.water.policy='collect';
+  if(kind==='food')return winterChoice(s,'self',null);if(kind==='shelter'){t.request='home';t.policy='growth';}
+  decide(s,t);s.village.actions.push({kind,before,due:s.day+30,after:null});s.village.actions=s.village.actions.slice(-12);log(s,[0],t.name+' · '+({water:'마실 물부터 안정시키기로 했다. 주민들이 자재를 모아 샘터를 정비한다.',ration:'물을 아껴 마시기로 했다. 식수 소비 35% 감소, 일손 효율 12% 감소.',collect:'식수를 평소처럼 마시며 정상 소비로 돌아간다.',shelter:'집 지을 나무를 모아 잠자리 마련을 우선한다.'})[kind],'decision',{story:s.village?.story});return '';
+}
 function villageObjective(s){
   const t=town(s,0),v=s.village,base={foodDays:Math.floor(reserveDays(t)),beds:capacity(t),pop:t.pop,homes:count(t,'home'),connected:hasConnection(s,0)};
   if(t.pop<=0)return {...base,id:'ruined',title:'마을이 비었습니다',action:'무슨 일이 있었는지 보기',reason:'연대기에서 주민들이 떠난 이유를 확인해요.'};
-  if(!v?.result)return {...base,id:'winter',title:'첫 목표 · 첫 겨울을 버티기',action:v?.plan?'내가 정한 방침과 결과 보기':'내가 할 일 · 먹거리 마련 방식 정하기',reason:'주민들은 집을 짓고 일해요. 우리는 자급·교역·보호 중 어떻게 먹고살지 정해요.'};
+  const water=Water.status(s,t);if(water&&(!water.protected||water.days<2||water.shortage>.1))return {...base,id:'water',title:'지금 할 일 · 마실 물부터 안정시키기',action:water.protected?'내가 할 일 · 식수 공급 확인·절수하기':water.queued?'샘터 정비 진행 보기':'내가 할 일 · 샘터 정비 방침 정하기',reason:water.shortage?'마실 물이 부족해 다른 일도 느려지고 있어요. 절수하거나 급수 기반을 살펴보세요.':water.protected?'식수 비축이 줄었어요. 샘의 공급과 소비를 살펴보고 절수로 시간을 벌 수 있어요.':'지금은 샘물을 길어 땔감으로 끓여요. 샘터를 정비하면 물을 끓이지 않고도 얻고 가뭄에 더 잘 버텨요.'};
+  if(!v?.result&&!t.livelihood?.chosen)return {...base,id:'winter',title:'첫 목표 · 첫 겨울을 버티기',action:v?.plan?'내가 정한 방침과 결과 보기':'내가 할 일 · 먹거리 마련 방식 정하기',reason:'주민들은 집을 짓고 일해요. 우리는 자급·교역·보호 중 어떻게 먹고살지 정해요.'};
   if(base.foodDays<14)return {...base,id:'food',title:'지금 목표 · 먹거리 안정시키기',action:'식량 확보 방침 다시 정하기',reason:'먹을 것이 넉넉하지 않아요. 자급을 유지할지 이웃의 곡물을 구할지 결정해요.'};
   if(base.beds<t.pop)return {...base,id:'housing',title:'정착 목표 · 모두의 잠자리 마련',action:'나무를 집에 쓸지 교환할지 정하기',reason:'교환에 쓰는 나무와 집을 짓는 나무가 겹쳐요. 무엇을 우선할지 정해요.'};
   if(!base.connected)return {...base,id:'contact',title:'다음 목표 · 이웃으로 가는 첫길',action:'교역할지 보호받을지 정하기',reason:'우리만의 초가집을 세웠어요. 이제 길을 열어 누구와 관계를 맺을지 정할 수 있어요.'};
@@ -471,11 +490,11 @@ function villageDaily(s){if(!s.village)return;const v=s.village,t=town(s,0);if(!
     if(linked&&p.kind==='protect'){if(t.liege===p.partner)p.status='active';else{const error=requestProtection(s,p.partner);p.status=error?'waiting_supply':'active';}}
   }
   for(const action of v.actions)if(!action.after&&s.day>=action.due){action.after=villageSnapshot(s);log(s,[0],'마을의 결정 뒤 30일을 관찰했다. 식량 '+Math.floor(action.before.foodDays)+'→'+Math.floor(action.after.foodDays)+'일분, 주민 '+action.before.pop+'→'+action.after.pop+'명. 같은 기간의 다른 사건도 포함한다.','comparison',{story:v.story});}
-  const milestones={farm:count(t,'farm')>0,home:count(t,'home')>0,connection:hasConnection(s,0),settlement:count(t,'home')>=2};for(const [key,ready]of Object.entries(milestones))if(ready&&!v.milestones[key]){v.milestones[key]=s.day;log(s,[0],({farm:'첫 농장의 수확이 시작됐다.',home:'첫 주택이 완성되어 잠자리가 늘었다.',connection:'이웃으로 이어지는 길이 열렸다.',settlement:'주택 두 채를 갖추며 야영지가 정착촌으로 자라고 있다.'})[key],'milestone',{story:v.story});}
+  const milestones={water:count(t,'well')>0,boat:count(t,'boat')>0,farm:count(t,'farm')>0,home:count(t,'home')>0,connection:hasConnection(s,0),settlement:count(t,'home')>=2};for(const [key,ready]of Object.entries(milestones))if(ready&&!v.milestones[key]){v.milestones[key]=s.day;log(s,[0],({water:'샘터 정비가 끝났다. 땔감 없이 마실 물을 얻고 가뭄을 더 잘 버틴다.',boat:'첫 어로용 배가 완성됐다. 주민들이 물 위로 나가 고기를 잡을 수 있다.',farm:'첫 농장의 수확이 시작됐다.',home:'첫 주택이 완성되어 잠자리가 늘었다.',connection:'이웃으로 이어지는 길이 열렸다.',settlement:'주택 두 채를 갖추며 야영지가 정착촌으로 자라고 있다.'})[key],'milestone',{story:v.story});}
   if(s.day>=v.winterEnd&&!v.result){v.status='spring';v.result={before:v.before,after:villageSnapshot(s)};log(s,[0],'겨울을 지나 봄을 맞았다. 주민 '+v.before.pop+'→'+t.pop+'명, 주택 '+v.before.homes+'→'+count(t,'home')+'채, 사망 '+(t.ledger.died-v.before.died)+'명.','season_result',{story:v.story});const ep=s.stories.find(x=>x.id===v.story);if(ep){ep.status='resolved';ep.outcome='겨울 뒤의 마을 · 주민 '+t.pop+'명 · 주택 '+count(t,'home')+'채';}}else if(s.day>=v.winterStart&&!v.result)v.status='winter';
 }
 
-function world(seed=7341){const s=fresh(seed,true);enableVillage(s);return s;}
+function world(seed=7341){const s=fresh(seed,true);enableVillage(s);Water.enable(s);Livelihood.enable(s);return s;}
 
 function fresh(seed=7341,regional=false,frontier=regional){
   const s={version:2,seed,rng:seed,time:0,day:0,started:false,foundingDay:0,nextCaravan:1,nextEvent:1,nextStory:1,nextArmy:1,nextNegotiation:1,caravans:[],events:[],stories:[],armies:[],negotiations:[],offers:[],relations:{},weather:null,forecast:null,nextWeather:20,wars:0,routes:[{a:1,b:2},{a:2,b:4},{a:4,b:3},{a:3,b:5},{a:5,b:1}].map((r,i)=>({...r,id:'r'+i,open:true,blockedUntil:0,created:0})),plots:[{id:'south-grain',name:'남쪽 곡창',kind:'food',owner:4,x:-29,z:34,capacity:24},{id:'river-fields',name:'강변 경작지',kind:'food',owner:1,x:2,z:-12,capacity:18},{id:'harbor-fields',name:'항구 배후 농지',kind:'food',owner:2,x:43,z:26,capacity:16}],towns:[makeTown(1,'오크헤이븐',-12,-37,66,'capital'),makeTown(2,'해오름 항구',58,12,54,'port'),makeTown(3,'돌마루 성채',-58,-8,48,'castle'),makeTown(4,'황금들녘',-18,53,36,'farm'),makeTown(5,'녹음숲',-66,49,30,'forest')]};
@@ -486,9 +505,9 @@ function fresh(seed=7341,regional=false,frontier=regional){
 }
 
 function policy(s,key,value){const t=s.towns[0];if(key==='policy'&&!['balanced','food','growth','trade'].includes(value))return '알 수 없는 방침입니다';if(key==='reserve'&&![14,24,40].includes(Number(value)))return '선택할 수 없는 비축 목표입니다';if(!['policy','reserve','tradeOpen','immigration','auto'].includes(key))return '알 수 없는 설정입니다';t[key]=key==='reserve'?Number(value):value;decide(s,t);log(s,[0],t.name+' · '+({policy:'마을 우선순위',reserve:'식량 비축 목표',tradeOpen:'교역 방침',immigration:'정착민 수용',auto:'외교 자동 판단'})[key]+'를 바꿨다.','policy');return '';}
-function request(s,type){if(!PLANS[type])return '알 수 없는 건물입니다';const t=s.towns[0];if((t.architecture?.level??0)<(PLANS[type].minTech||0))return TECH[PLANS[type].minTech].name+'을 먼저 익혀야 합니다';t.request=type;decide(s,t);log(s,[0],t.name+' · 다음 건설을 '+PLANS[type].name+'으로 정했다.','policy');return '';}
-function validate(s){return !!s&&s.version===2&&Number.isFinite(s.time)&&Number.isInteger(s.day)&&s.towns?.length>=6&&s.towns.length<=32&&s.towns[0]?.id===0&&Array.isArray(s.caravans)&&Array.isArray(s.events)&&Array.isArray(s.routes)&&Array.isArray(s.stories)&&Array.isArray(s.armies)&&s.towns.every(t=>['food','wood','stone','pop'].every(k=>Number.isFinite(t[k])&&t[k]>=0)&&Array.isArray(t.workers)&&t.workers.length===6&&Array.isArray(t.buildings)&&(!t.architecture||(Number.isInteger(t.architecture.level)&&t.architecture.level>=0&&t.architecture.level<TECH.length&&Number.isFinite(t.architecture.experience)&&t.architecture.experience>=0))&&t.buildings.every(b=>b.tier===undefined||(Number.isInteger(b.tier)&&b.tier>=0&&b.tier<TECH.length)));}
-function stocks(s,key){return s.towns.reduce((n,t)=>n+t[key],0)+s.towns.reduce((n,t)=>n+t.workers.reduce((q,w)=>q+(w.cargo?.kind===key?w.cargo.q:0),0)+(t.project?(t.project.material[key]||0):0),0)+s.caravans.reduce((q,c)=>q+(c.kind===key?c.q:0)+(c.other===key?c.payment:0),0)+(key==='food'?s.armies.reduce((n,a)=>n+a.supplies+a.loot,0):0);}
-const api={enableRoads,villageObjective,TECH,ensureArchitecture,enableArchitecture,architectureStatus,buildingInfo,enableVillage,villageSnapshot,villageStatus,villageQuote,neighbors,winterChoice,dispatchExchange,requestProtection,answerClaim,incoming,world,regionalize,factionOf,sameFaction,factionSummary,bounds,KEY,LEGACY_KEY,PLANS,JOBS,fresh,step,policy,request,validate,count,capacity,reserveDays,workSite,stocks,newCaravan,caravanStep,findPath,foodFactor,maintenance,foodNeed,storage,diagnose,propose,negotiate,prepareWar,startExploration,acceptProtection,story,log,projectCost,population,recordSample};
+function request(s,type){if(!PLANS[type])return '알 수 없는 건물입니다';const t=s.towns[0];if(type==='boat'&&!t.livelihood?.fishing)return '가까운 물가가 있어야 어로용 배를 준비할 수 있습니다';if((t.architecture?.level??0)<(PLANS[type].minTech||0))return TECH[PLANS[type].minTech].name+'을 먼저 익혀야 합니다';t.request=type;decide(s,t);log(s,[0],t.name+' · 다음 건설을 '+PLANS[type].name+'으로 정했다.','policy');return '';}
+function validate(s){return !!s&&s.version===2&&Number.isFinite(s.time)&&Number.isInteger(s.day)&&s.towns?.length>=6&&s.towns.length<=32&&s.towns[0]?.id===0&&Array.isArray(s.caravans)&&Array.isArray(s.events)&&Array.isArray(s.routes)&&Array.isArray(s.stories)&&Array.isArray(s.armies)&&s.towns.every(t=>['food','wood','stone','pop'].every(k=>Number.isFinite(t[k])&&t[k]>=0)&&Array.isArray(t.workers)&&t.workers.length===6&&Array.isArray(t.buildings)&&(!t.architecture||(Number.isInteger(t.architecture.level)&&t.architecture.level>=0&&t.architecture.level<TECH.length&&Number.isFinite(t.architecture.experience)&&t.architecture.experience>=0))&&(!t.water||(Number.isFinite(t.water.stock)&&t.water.stock>=0&&t.water.ledger&&Number.isFinite(t.water.ledger.cleaned)))&&t.buildings.every(b=>b.tier===undefined||(Number.isInteger(b.tier)&&b.tier>=0&&b.tier<TECH.length)));}
+function stocks(s,key){if(key==='water')return s.towns.reduce((n,t)=>n+(t.water?.stock||0),0);return s.towns.reduce((n,t)=>n+t[key],0)+s.towns.reduce((n,t)=>n+t.workers.reduce((q,w)=>q+(w.cargo?.kind===key?w.cargo.q:0),0)+(t.project?(t.project.material[key]||0):0),0)+s.caravans.reduce((q,c)=>q+(c.kind===key?c.q:0)+(c.other===key?c.payment:0),0)+(key==='food'?s.armies.reduce((n,a)=>n+a.supplies+a.loot,0):0);}
+const api={enableLivelihood:Livelihood.enable,livelihoodStatus:Livelihood.status,foodOrder,enableWater:Water.enable,waterStatus:Water.status,survivalOrder,enableRoads,villageObjective,TECH,ensureArchitecture,enableArchitecture,architectureStatus,buildingInfo,enableVillage,villageSnapshot,villageStatus,villageQuote,neighbors,winterChoice,dispatchExchange,requestProtection,answerClaim,incoming,world,regionalize,factionOf,sameFaction,factionSummary,bounds,KEY,LEGACY_KEY,PLANS,JOBS,fresh,step,policy,request,validate,count,capacity,reserveDays,workSite,stocks,newCaravan,caravanStep,findPath,foodFactor,maintenance,foodNeed,storage,diagnose,propose,negotiate,prepareWar,startExploration,acceptProtection,story,log,projectCost,population,recordSample};
 if(typeof module!=='undefined')module.exports=api;else root.Valley=api;
 })(typeof window==='undefined'?globalThis:window);

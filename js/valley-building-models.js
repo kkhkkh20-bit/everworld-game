@@ -37,6 +37,11 @@ export function installBuildingModels(models){
     if(level===3){b.box(w+.2,.18,d+.2,'#b4ac92',0,2.25);b.box(1.4,.23,.65,'#b5ad91',0,.35,d/2+.3);b.box(1,.18,.45,'#c7c0a8',0,.15,d/2+.65);}
     models[name]=b.finish();
   }
+  for(const [name,stone]of [['springWell',false],['stoneWell',true]]){const w=builder();w.part(new THREE.CylinderGeometry(1.3,1.4,.65,10),stone?'#a9a99a':'#96774e',0,.4,0);w.part(new THREE.CylinderGeometry(.95,.95,.04,10),'#4b9eac',0,.75,0);for(const x of [-1.15,1.15])w.box(.16,2.1,.16,'#765237',x,1.1,0);w.roof(3.1,2.8,.7,stone?'#ad6149':'#bb9a56',2.15);w.box(.16,.12,2.5,'#755333',0,1.8,0);w.part(new THREE.CylinderGeometry(.28,.22,.4,7),'#8b6944',1.5,.25,.7);models[name]=w.finish();}
+  const landing=builder();for(let x=-1.3;x<=1.3;x+=.52)landing.box(.43,.13,3,'#a17a4e',x,.13,0);for(const x of [-1.4,1.4])landing.box(.13,.9,.13,'#725135',x,.45,1.3);landing.box(.6,.45,.55,'#a48a5a',1,.36,-.7);models.boatLanding=landing.finish();
+  const raft=builder();for(let x=-.9;x<=.9;x+=.45){const log=new THREE.CylinderGeometry(.22,.22,3.4,6);log.rotateX(Math.PI/2);raft.part(log,'#92744f',x,.25,0);}models.logRaft=raft.finish();
+  const skiff=builder();skiff.box(1.8,.22,3.6,'#8e623b',0,.2);for(const x of [-.95,.95])skiff.box(.16,.6,3.4,'#a37948',x,.5);skiff.box(1.8,.6,.16,'#9a7244',0,.5,-1.75);skiff.roof(1.8,.8,.6,'#a37948',.25);skiff.box(.12,3.8,.12,'#765737',0,1.9);skiff.box(1.7,2,.05,'#e1d3a4',.83,2.7);models.fishingSkiff=skiff.finish();
+  const deer=builder();deer.box(1.25,.5,.48,'#9b6c3e',0,.95);deer.box(.2,.6,.24,'#a87948',.5,1.3);deer.box(.38,.35,.28,'#a87948',.65,1.65);for(const x of [-.45,.4])for(const z of [-.17,.17])deer.box(.09,.72,.09,'#76502f',x,.42,z);deer.box(.25,.15,.15,'#e4d6b8',-.7,1.05);for(const z of [-.12,.12])deer.box(.05,.4,.05,'#665039',.56,1.98,z);models.woodlandDeer=deer.finish();
   const workshop=builder();workshop.box(2.7,1.8,2.2,'#8a6544');workshop.roof(3.3,3,1.1,'#856044',1.85);workshop.box(1.8,.5,.65,'#aa8051',0,.35,1.65);workshop.box(.7,.4,.5,'#707c7d',.3,.8,1.65);models.woodWorkshop=workshop.finish();
   const mill=builder();mill.box(1.7,3.8,1.7,'#947349');mill.roof(2.2,2.2,.8,'#77513b',3.8);mill.box(.18,4.6,.15,'#c6ad75',0,3.1,1);mill.box(4.6,.18,.15,'#c6ad75',0,3.1,1.04);models.woodMill=mill.finish();
   for(const own of [false,true]){const flag=builder();flag.box(.09,2.8,.09,'#716345');flag.box(1,.67,.08,'#ffffff',.48,2.2,0);if(own){flag.part(new THREE.OctahedronGeometry(.18),'#ffffff',0,2.92);flag.box(.7,.2,.08,'#ffffff',.32,1.63,0);}models[own?'ownBanner':'townBanner']=flag.finish();}
@@ -45,6 +50,8 @@ export function installBuildingModels(models){
 
 export function buildingAppearance(t,b){
   const tier=b.tier??0;
+  if(b.type==='boat')return 'boatLanding';
+  if(b.type==='well')return tier<2?'springWell':'stoneWell';
   if(b.type==='farm')return 'grain';
   if(b.type==='home')return ['thatchHouse','timberHouse','stoneHouse','stoneManor'][tier];
   if(b.type==='hall')return tier===0?'thatchHouse':tier===1?'timberHouse':tier===2?'stoneHouse':t.style==='castle'?'castle':'townhall';
