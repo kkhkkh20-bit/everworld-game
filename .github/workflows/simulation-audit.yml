@@ -17,8 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate isekai work and preserved frontier economy
+      - name: Validate autonomous valley and preserved scenarios
         run: |
+          node tests/valley.cjs
           node tests/isekai.cjs
           node tests/frontier.cjs
       - name: Replay ten worlds for 180 days

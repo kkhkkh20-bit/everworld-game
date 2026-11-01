@@ -1,4 +1,4 @@
-"""Bundle the local game as one offline HTML; no build dependencies required."""
+"""Bundle the preserved isekai chapter as one offline HTML; no build dependencies required."""
 import base64
 import json
 import sys
@@ -10,8 +10,8 @@ def data(name):
     mime = 'image/svg+xml' if path.suffix == '.svg' else 'image/png'
     return 'data:' + mime + ';base64,' + base64.b64encode(path.read_bytes()).decode()
 
-html = (root / 'frontier.html').read_text()
-html = html.replace('<link rel="stylesheet" href="frontier.css">', '<style>' + (root / 'frontier.css').read_text() + '</style>')
+html = (root / 'frontier-isekai.html').read_text()
+html = html.replace('<link rel="stylesheet" href="frontier-isekai.css">', '<style>' + (root / 'frontier-isekai.css').read_text() + '</style>')
 engine = (root / 'js/isekai-engine.js').read_text()
 ui = (root / 'js/isekai-ui.js').read_text()
 ui = ui.replace("images[name].src='assets/frontier/'+name+'.png'", 'images[name].src=' + json.dumps({n:data(n+'.png') for n in ['town', 'people', 'farm']}) + '[name]')

@@ -24,3 +24,13 @@ New icons downloaded from the official [Game-icons repository](https://github.co
 - `assets/frontier/village.svg`: [village](https://github.com/game-icons/icons/blob/master/delapouite/village.svg), icons made by **Delapouite**.
 
 SVG artwork is unmodified. Licensed under [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/). The authors' distribution notice is retained in [Game-Icons.txt](licenses/Game-Icons.txt), and visible attribution is in the game's help/credits. No CDN or external asset requests are needed at runtime.
+
+## 산들계곡 / Valley world (2026-11-01)
+
+The new 3D world uses **KayKit Medieval Hexagon Pack 1.0.1**, created by **Kay Lousberg** ([creator](https://kaylousberg.itch.io/), [website](https://www.kaylousberg.com/)), under **CC0 1.0**. Eighteen selected building, construction, bridge, vegetation, rock and mountain models were retrieved from the [redistributable collection mirror](https://github.com/GeorgeQLe/assets-kaykit-3d-environments), commit `d5e6c73284e9385a389ac7181dec3d0dc9e9021d`, path `assets/kaykit/medieval-hexagon-pack-1.0.1/Assets/gltf/`. The collection's original creator notice and CC0 grant are retained verbatim in [KayKit-CC0.txt](licenses/KayKit-CC0.txt).
+
+`assets/valley/models/*.glb` bundle the source glTF, original binary geometry and original PNG texture into single GLB files. Geometry and textures are unchanged; placement, lighting, scale and a subdued mountain tint are set by the renderer. No CDN is needed at runtime.
+
+**Three.js 0.160.0** and its GLTFLoader/BufferGeometryUtils modules are vendored under `assets/vendor/three/`. Downloaded from the pinned npm distribution via jsDelivr. MIT license: [Three.txt](licenses/Three.txt). The rendering library and its loaders are unmodified.
+
+Terrain, river ribbon, roads, lighting, worker figures, caravans and interface are game code. The official Kenney city-builder starter kit was evaluated during asset research; its modern buildings were not included in this medieval world.
