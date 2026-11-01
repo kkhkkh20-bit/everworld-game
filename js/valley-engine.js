@@ -135,7 +135,7 @@ function storage(t){return Math.max(20,t.pop*10+count(t,'farm')*35+count(t,'mill
 function population(s){return s.towns.reduce((n,t)=>n+t.pop,0)+s.caravans.reduce((n,c)=>n+(c.people||0),0);}
 function hasConnection(s,id){return s.routes.some(r=>(r.a===id||r.b===id)&&r.open);}
 function relation(s,a,b){const key=[a,b].sort((a,b)=>a-b).join(':');if(!s.relations[key])s.relations[key]={trust:10,refusals:0,peaceUntil:0,lastDemand:-100};return s.relations[key];}
-function atWar(s,a,b){return s.armies.some(x=>!x.ended&&((x.from===a&&x.to===b)||(x.from===b&&x.to===a)));}
+function atWar(s,a,b){const first=town(s,a),second=town(s,b),belongs=(id,t)=>id===t?.id||(s.regional&&sameFaction(s,town(s,id),t));return s.armies.some(x=>!x.ended&&((belongs(x.from,first)&&belongs(x.to,second))||(belongs(x.from,second)&&belongs(x.to,first))));}
 function findPath(s,from,to,military=false){
   if(from===to)return [from];const queue=[[from]],seen=new Set([from]);
   while(queue.length){const path=queue.shift(),id=path.at(-1);for(const r of s.routes){if(!r.open||r.blockedUntil>s.day)continue;const next=r.a===id?r.b:r.b===id?r.a:null;if(next===null||seen.has(next)||(!military&&atWar(s,id,next)))continue;const p=[...path,next];if(next===to)return p;seen.add(next);queue.push(p);}}
@@ -150,6 +150,7 @@ function diagnose(s,t){
   const trend=old?(t.food-old.food)/duration:0;
   return {foodDays:reserveDays(t),trend,condition:t.condition,foodFactor:foodFactor(s,t),need:t.need,war:s.armies.some(a=>a.from===t.id||a.to===t.id),connected:hasConnection(s,t.id)};
 }
+function routeDistance(s,a,b){const path=findPath(s,a,b);if(!path)return Infinity;return path.slice(1).reduce((n,id,i)=>{const x=town(s,path[i]),y=town(s,id);return n+Math.hypot(x.x-y.x,x.z-y.z);},0);}
 function price(t,k){const reserve=k==='food'?reserveDays(t):t[k]/Math.max(.2,maintenance(t,k));return ({food:1,wood:1.7,stone:2.3})[k]*Math.max(.7,Math.min(3,24/Math.max(4,reserve)));}
 function surplus(t,k){return Math.max(0,t[k]-(k==='food'?foodNeed(t)*24:k==='wood'?maintenance(t,k)*14+5:maintenance(t,k)*16+3));}
 function newCaravan(s,a,b,kind,q,other,payment,meta={}){
@@ -162,7 +163,7 @@ function trade(s){
 
     const needs=['food','wood','stone'].filter(k=>!s.caravans.some(c=>c.to===buyer.id&&c.phase==='out'&&c.kind===k&&!c.tribute&&!c.people)).filter(k=>k==='food'?reserveDays(buyer)<26:buyer[k]<maintenance(buyer,k)*18+4);
     for(const kind of needs){
-      const sellers=s.towns.filter(t=>t.id!==buyer.id&&t.pop>0&&t.tradeOpen&&surplus(t,kind)>3&&findPath(s,t.id,buyer.id)&&!atWar(s,t.id,buyer.id)).sort((a,b)=>surplus(b,kind)-surplus(a,kind));
+      const sellers=s.towns.filter(t=>t.id!==buyer.id&&t.pop>0&&t.tradeOpen&&surplus(t,kind)>3&&findPath(s,t.id,buyer.id)&&!atWar(s,t.id,buyer.id)).sort((a,b)=>s.regional?routeDistance(s,a.id,buyer.id)-routeDistance(s,b.id,buyer.id):surplus(b,kind)-surplus(a,kind));
       let bought=false;
       for(const seller of sellers){
         const offered=['stone','wood','food'].filter(k=>k!==kind&&surplus(buyer,k)>2).sort((a,b)=>surplus(buyer,b)/price(seller,b)-surplus(buyer,a)/price(seller,a));
@@ -217,6 +218,7 @@ function propose(s,a,b,plotId){
 }
 function negotiate(s,n){
   const a=town(s,n.from),b=town(s,n.to),plot=s.plots.find(p=>p.id===n.plot);if(!a||!b||!plot||plot.owner!==b.id){n.done=true;return;}
+  if(sameFaction(s,a,b)){n.done=true;log(s,[a.id,b.id],'두 마을이 같은 세력의 보호 관계로 연결되어 경작권 압박을 중단했다.','agreement',{story:n.story});return;}
   if(n.stage==='request'){
     if(b.pop<=0){n.done=true;if(a.wood>=6){a.wood-=6;plot.owner=a.id;log(s,[a.id,b.id],a.name+'이 주민 없는 '+plot.name+'을 목재 6을 들여 정비하고 경작권을 확보했다.','territory',{story:n.story});}return;}
     if(n.goal!=='security'&&reserveDays(a)>30){n.done=true;log(s,[a.id,b.id],a.name+'이 공급 사정이 나아져 경작권 요청을 거뒀다.','diplomacy',{story:n.story});return;}
@@ -236,10 +238,11 @@ function negotiate(s,n){
   }
 }
 function prepareWar(s,a,b,plot,storyId){
+  if(!a||!b||!plot)return false;
   const rel=relation(s,a.id,b.id),soldiers=Math.min(Math.floor(a.pop*.24),Math.floor(a.pop-a.deployed-5)),defenders=Math.max(2,Math.floor((b.pop-b.deployed)*.14));
-  const kit=soldiers*4.5,benefit=plot.capacity*.20*90;
+  const kit=soldiers*(4.5+(s.regional?Math.hypot(plot.x-a.x,plot.z-a.z)*.09:0)),benefit=plot.capacity*.20*90;
   const expected=soldiers*a.defense/(defenders*b.defense*(b.liege!==null?1.5:1));
-  if(a.pop<18||a.deployed||b.deployed||rel.peaceUntil>s.day||soldiers<4||a.food<kit+foodNeed(a)*5||benefit<kit*1.5||expected<(1.5-a.ambition*.45)||a.ambition<.4)return false;
+  if(sameFaction(s,a,b)||a.pop<18||a.deployed||b.deployed||rel.peaceUntil>s.day||soldiers<4||a.food<kit+foodNeed(a)*5||benefit<kit*1.5||expected<(1.5-a.ambition*.45)||a.ambition<.4)return false;
   a.food-=kit;a.deployed+=soldiers;b.deployed+=defenders;const protector=b.liege!==null?town(s,b.liege):null,allied=protector&&protector.pop>12&&!protector.deployed&&reserveDays(protector)>12?Math.floor(protector.pop*.1):0;if(allied){protector.deployed+=allied;log(s,[protector.id,b.id],protector.name+'이 보호 약속에 따라 '+allied+'명을 '+b.name+'의 방어에 보냈다. 해당 인원은 생산에서 빠진다.','war',{story:storyId});}
   const army={ally:allied?protector.id:null,allies:allied,initialAllies:allied,id:s.nextArmy++,from:a.id,to:b.id,plot:plot.id,story:storyId,troops:soldiers,initial:soldiers,defenders,initialDefenders:defenders,supplies:kit,loot:0,phase:'march',progress:0,x:a.x,z:a.z,started:s.day,battleDay:0,ended:false};
   s.armies.push(army);s.wars++;
@@ -253,8 +256,9 @@ function endWar(s,a,result){
   if(a.ally!==null&&a.ally!==undefined){const p=town(s,a.ally);p.deployed=Math.max(0,p.deployed-a.allies);a.allies=0;}target.deployed=Math.max(0,target.deployed-a.defenders);a.defenders=0;a.phase='return';a.progress=0;a.ended=true;relation(s,source.id,target.id).peaceUntil=s.day+100;
   if(result==='capture'&&plot){plot.owner=source.id;plot.changed=s.day;source.ledger.captures=(source.ledger.captures||0)+1;const loot=Math.min(target.food,a.troops*1.8);target.food-=loot;a.loot=loot;target.condition=Math.max(.15,target.condition-.12);
     log(s,[source.id,target.id],source.name+'이 '+plot.name+'을 장악했다. 경작 능력이 이전되고 '+target.name+'의 식량 생산 기반이 줄었다.','territory',{story:a.story});
-  }else log(s,[source.id,target.id],source.name+'의 원정이 철수했다. 경작권은 바뀌지 않았고 보급과 인명만 소모되었다.','peace',{story:a.story});
-  const episode=s.stories.find(x=>x.id===a.story);if(episode){episode.status='resolved';episode.outcome=result==='capture'?'경작권 이전과 전쟁 피해':'원정 실패와 소모';}
+  }else if(result==='pact')log(s,[source.id,target.id],'두 마을이 같은 세력의 보호 관계로 연결되어 원정을 중단했다. 생존 병력과 보급은 귀로를 마친 뒤 돌아온다.','agreement',{story:a.story});
+  else log(s,[source.id,target.id],source.name+'의 원정이 철수했다. 경작권은 바뀌지 않았고 보급과 인명만 소모되었다.','peace',{story:a.story});
+  const episode=s.stories.find(x=>x.id===a.story);if(episode){episode.status='resolved';episode.outcome=result==='capture'?'경작권 이전과 전쟁 피해':result==='pact'?'보호 관계에 따른 원정 중단':'원정 실패와 소모';}
 }
 function armyStep(s,a,dt){
   const from=town(s,a.from),to=s.plots.find(p=>p.id===a.plot)||town(s,a.to),distance=Math.hypot(to.x-from.x,to.z-from.z)||1;
@@ -263,7 +267,7 @@ function armyStep(s,a,dt){
     if(a.progress>=1){if(returning){from.deployed=Math.max(0,from.deployed-a.troops);from.food+=a.supplies+a.loot;a.supplies=0;a.loot=0;a.done=true;log(s,[from.id],from.name+'의 생존 병력 '+a.troops+'명이 돌아왔다. 남은 보급과 전리품이 창고에 도착했다.','peace',{story:a.story});}else{a.phase='battle';a.battleDay=s.day;}}
   }
 }
-function armiesDaily(s){for(const a of s.armies){const from=town(s,a.from),to=town(s,a.to);a.supplies=Math.max(0,a.supplies-a.troops*.18);
+function armiesDaily(s){for(const a of s.armies){const from=town(s,a.from),to=town(s,a.to);if(!a.ended&&sameFaction(s,from,to)){endWar(s,a,'pact');continue;}a.supplies=Math.max(0,a.supplies-a.troops*.18);
   if(a.supplies<=0&&s.day%5===0&&a.troops>0){const q=casualties(s,from,1,'원정 보급 부족',a.story);a.troops-=q;}
   if(a.phase==='battle'&&s.day-a.battleDay>=3){a.battleDay=s.day;const attack=a.troops*from.defense,defend=a.defenders*to.defense+(a.allies||0)*(a.ally!==null?town(s,a.ally).defense:1);
     const la=Math.min(a.troops,Math.max(1,Math.floor(random(s)*2+defend/(attack+1)))),ld=Math.min(a.defenders+(a.allies||0),Math.max(1,Math.floor(random(s)*2+attack/(defend+1))));
@@ -278,16 +282,17 @@ function explorationDaily(s){for(const t of s.towns){const ex=t.expedition;if(!e
   if(ex.phase==='waiting'&&t.wood>=12&&t.stone>=3){t.wood-=12;t.stone-=3;ex.phase='road';ex.until=s.day+9;log(s,[t.id,target.id],t.name+'이 목재 12·석재 3을 들여 '+target.name+'까지 숲길을 개척한다.','route');}
   else if(ex.phase==='road'){s.routes.push({id:'outpost-'+t.id,a:t.id,b:target.id,open:true,blockedUntil:0,created:s.day});t.expedition=null;relation(s,t.id,target.id).trust=20;log(s,[t.id,target.id],t.name+'과 '+target.name+' 사이에 첫 교역로가 열렸다. 이제 물자가 실제로 오갈 수 있다.','route');s.offers.push({from:target.id,to:t.id,deadline:s.day+15,status:'pending'});}
 }}
-function acceptProtection(s,offer){const a=town(s,offer.from),b=town(s,offer.to);if(!a||!b||offer.status!=='pending'||!findPath(s,a.id,b.id))return '유효한 보호 제안이 없습니다';b.liege=a.id;b.taxRate=.12;offer.status='accepted';relation(s,a.id,b.id).trust+=35;log(s,[a.id,b.id],b.name+'이 '+a.name+'의 보호 아래 들어갔다. 수확의 12%를 조공으로 보내는 대신 강한 상대의 보호를 얻었다.','pact');if(a.food>foodNeed(a)*24+12)newCaravan(s,a,b,'food',12,null,0,{tribute:true});return '';}
+function acceptProtection(s,offer){const a=town(s,offer.from),b=town(s,offer.to);if(!a||!b||offer.status!=='pending'||!findPath(s,a.id,b.id))return '유효한 보호 제안이 없습니다';b.liege=a.id;b.faction=a.faction??null;b.taxRate=.12;offer.status='accepted';relation(s,a.id,b.id).trust+=35;log(s,[a.id,b.id],b.name+'이 '+a.name+'의 보호 아래 들어갔다. 수확의 12%를 조공으로 보내는 대신 강한 상대의 보호를 얻었다.','pact');if(a.food>foodNeed(a)*24+12)newCaravan(s,a,b,'food',12,null,0,{tribute:true});return '';}
 function migrate(s,t){if(t.pop-t.deployed<7||t.refugeeCooldown>s.day)return;const options=s.towns.filter(b=>b.id!==t.id&&b.immigration&&b.pop>0&&reserveDays(b)>24&&b.pop+2<=capacity(b)&&findPath(s,t.id,b.id)&&!s.armies.some(a=>!a.ended&&(a.to===b.id||a.from===b.id))).sort((a,b)=>reserveDays(b)-reserveDays(a));const dest=options[0];if(!dest)return;const q=2,pack=Math.min(t.food,3);t.pop-=q;t.ledger.left+=q;t.food-=pack;t.refugeeCooldown=s.day+20;s.caravans.push({id:s.nextCaravan++,from:t.id,to:dest.id,kind:'food',q:pack,originalQ:pack,other:null,payment:0,phase:'out',progress:0,x:t.x,z:t.z,path:findPath(s,t.id,dest.id),people:q,story:t.needStory});log(s,[t.id,dest.id],t.name+'의 '+q+'명이 생계 악화로 '+dest.name+'을 향해 떠났다. 도착하기 전에는 어느 마을 인구에도 더하지 않는다.','migration',{story:t.needStory});}
 function weatherDaily(s){if(s.forecast&&s.day>=s.forecast.start){s.weather=s.forecast;s.forecast=null;const w=s.weather;w.story=story(s,w.ids,w.name+'과 계곡의 공급',w.ids.map(id=>town(s,id).name).join('·')+'의 수확 계수 '+w.factor,'climate');log(s,w.ids,w.name+'이 시작됐다. 해당 지역의 실제 식량 생산이 '+Math.round(w.factor*100)+'%로 바뀐다.','weather',{story:w.story});}if(s.weather&&s.day>=s.weather.until){log(s,s.weather.ids,s.weather.name+'이 끝났다. 줄어든 재고와 이주·전쟁 피해는 남는다.','weather',{story:s.weather.story});s.weather=null;}
-  if(!s.forecast&&!s.weather&&s.day>=s.nextWeather){const r=random(s),id=1+Math.floor(random(s)*5),ids=[id];if(random(s)>.5)ids.push(id%5+1);const drought=r<.5;const duration=20+Math.floor(random(s)*16);s.forecast={ids,name:drought?'가뭄':'좋은 비',factor:drought?.48:1.28,start:s.day+6,until:s.day+6+duration};s.nextWeather=s.day+60+Math.floor(random(s)*35);log(s,ids,ids.map(id=>town(s,id).name).join('·')+'에 '+s.forecast.name+' 징후. 6일 뒤 수확 여건이 달라질 전망이다.','forecast');}}
+  if(!s.forecast&&!s.weather&&s.day>=s.nextWeather){const r=random(s),candidates=s.towns.filter(t=>t.id!==0&&t.pop>0);if(!candidates.length)return;const origin=candidates[Math.floor(random(s)*candidates.length)],id=origin.id,ids=[id];if(random(s)>.5){const near=candidates.filter(t=>t.id!==id).sort((a,b)=>Math.hypot(a.x-origin.x,a.z-origin.z)-Math.hypot(b.x-origin.x,b.z-origin.z))[0];if(near)ids.push(near.id);}const drought=r<.5;const duration=20+Math.floor(random(s)*16);s.forecast={ids,name:drought?'가뭄':'좋은 비',factor:drought?.48:1.28,start:s.day+6,until:s.day+6+duration};s.nextWeather=s.day+60+Math.floor(random(s)*35);log(s,ids,ids.map(id=>town(s,id).name).join('·')+'에 '+s.forecast.name+' 징후. 6일 뒤 수확 여건이 달라질 전망이다.','forecast');}}
 function diplomacyDaily(s){
+  if(s.regional)for(const member of s.towns){if(member.liege===null||!member.pop||reserveDays(member)>14||s.caravans.some(c=>c.to===member.id&&c.kind==='food'&&c.phase==='out'))continue;const ruler=town(s,member.liege),q=Math.min(ruler.food-foodNeed(ruler)*28,foodNeed(member)*18);if(q>3&&newCaravan(s,ruler,member,'food',q,null,0,{tribute:true,story:member.needStory}))log(s,[ruler.id,member.id],ruler.name+'이 보호 중인 '+member.name+'에 비축 곡물 '+Math.round(q)+'을 지원 수레로 보냈다. 도착하기 전까지 상대의 재고는 늘지 않는다.','pact',{story:member.needStory});}
   for(const n of s.negotiations)if(!n.done&&s.day>=n.deadline)negotiate(s,n);
   for(const t of s.towns){claimNeed(s,t);if(t.pop<1)continue;
     if(t.id===0&&t.auto&&!t.explored&&!t.expedition&&reserveDays(t)>16&&s.day-t.founded>12)startExploration(s,t.id);
     if(((t.need==='food'&&reserveDays(t)<22&&!s.caravans.some(c=>c.to===t.id&&c.kind==='food'&&c.phase==='out'))||((t.ledger.importedFood||0)>30&&t.fertility<.8&&foodFactor(s,t)<1&&reserveDays(t)<42))&&t.ambition>=.4&&s.day-t.lastDiplomacy>60&&!t.deployed){
-      const plots=s.plots.filter(p=>p.kind==='food'&&p.owner!==t.id&&town(s,p.owner).liege!==t.id&&findPath(s,t.id,p.owner,true)&&relation(s,t.id,p.owner).peaceUntil<=s.day).sort((a,b)=>Math.hypot(a.x-t.x,a.z-t.z)-Math.hypot(b.x-t.x,b.z-t.z));
+      const plots=s.plots.filter(p=>p.kind==='food'&&p.owner!==t.id&&!sameFaction(s,t,town(s,p.owner))&&town(s,p.owner).liege!==t.id&&findPath(s,t.id,p.owner,true)&&relation(s,t.id,p.owner).peaceUntil<=s.day).sort((a,b)=>Math.hypot(a.x-t.x,a.z-t.z)-Math.hypot(b.x-t.x,b.z-t.z));
       if(plots[0]){propose(s,t,town(s,plots[0].owner),plots[0].id);t.lastDiplomacy=s.day;}
     }
     if((t.starved>=4||t.condition<.5)&&s.day%10===0)migrate(s,t);
@@ -297,7 +302,8 @@ function diplomacyDaily(s){
 function daily(s){for(const t of s.towns)t.season=season(s);weatherDaily(s);armiesDaily(s);
   for(const t of s.towns){
     if(t.pop<=0){if(t.state!=='abandoned'){t.state='abandoned';log(s,[t.id],t.name+'에 남은 주민이 없다. 빈 정착지가 되었다.','ruin',{story:t.needStory});}t.condition=Math.max(.1,t.condition-.002);if(s.day%30===0){const b=t.buildings.find(b=>!b.ruined);if(b)b.ruined=true;}continue;}
-    if(t.liege!==null&&town(s,t.liege).pop<=0){const former=t.liege;t.liege=null;t.taxRate=0;t.taxAccrued=0;log(s,[t.id,former],t.name+'의 보호자가 사라져 조공 관계가 끝났다. 독립된 생계를 다시 꾸려야 한다.','pact');}
+    if(t.liege!==null&&town(s,t.liege).pop<=0){const former=t.liege;t.liege=null;t.faction=null;t.taxRate=0;t.taxAccrued=0;log(s,[t.id,former],t.name+'의 보호자가 사라져 조공 관계가 끝났다. 독립된 생계를 다시 꾸려야 한다.','pact');}
+    if(s.regional&&t.liege!==null)t.faction=town(s,t.liege).faction??null;
     const need=foodNeed(t),eaten=Math.min(t.food,need);t.food-=eaten;t.ledger.eaten+=eaten;t.starved=eaten+1e-8<need?t.starved+1:Math.max(0,t.starved-1);t.forest=Math.min(1000,t.forest+1.2);
     const spoil=Math.min(t.food,t.food*.002+Math.max(0,t.food-storage(t))*.15);t.food-=spoil;t.ledger.spoiled+=spoil;
     let supplied=1;for(const key of ['wood','stone']){const want=maintenance(t,key),used=Math.min(t[key],want);t[key]-=used;t.ledger[key==='wood'?'upkeepWood':'upkeepStone']+=used;if(want>0)supplied=Math.min(supplied,used/want);}
@@ -320,17 +326,48 @@ function step(s,dt){if(!Number.isFinite(dt)||dt<=0)return;dt=Math.min(dt,.25);s.
   for(const a of s.armies)armyStep(s,a,dt);s.armies=s.armies.filter(a=>!a.done);
   const day=Math.floor(s.time);if(day>s.day){s.day=day;daily(s);}
 }
-function fresh(seed=7341){
+// A polity consists of real settlements, a protector, and physical tribute flows.
+function factionOf(s,t){return s.factions?.find(f=>f.id===t.faction)||null;}
+function sameFaction(s,a,b){return a?.faction!=null&&a.faction===b?.faction;}
+function bounds(s){return s.bounds||{minX:-115,maxX:115,minZ:-98,maxZ:98};}
+function factionSummary(s,id){const f=s.factions?.find(f=>f.id===id);if(!f)return null;const members=s.towns.filter(t=>t.faction===id&&t.pop>0),ids=new Set(members.map(t=>t.id));return {...f,members,pop:members.reduce((n,t)=>n+t.pop,0),tribute:members.reduce((n,t)=>n+t.ledger.tax,0),wars:s.armies.filter(a=>!a.ended&&(ids.has(a.from)||ids.has(a.to))),caravans:s.caravans.filter(c=>ids.has(c.from)||ids.has(c.to))};}
+function regionalize(s,legacy=false){
+  if(s.regional)return s;
+  s.regional=1;s.bounds={minX:-340,maxX:330,minZ:-270,maxZ:280};
+  s.factions=[
+    {id:'river',name:'해오름 상단연맹',color:'#478d9e',seat:1,identity:'강변 교역 도시와 곡창이 맺은 연맹',x:0,z:0},
+    {id:'iron',name:'흑철 변경백령',color:'#ac685e',seat:6,identity:'북서 산지의 채석과 성채를 기반으로 한 영지',x:-210,z:-155},
+    {id:'pine',name:'청송 삼림동맹',color:'#729253',seat:11,identity:'북동 숲의 목재와 경작지로 이어진 마을들',x:195,z:-155},
+    {id:'wheat',name:'금빛 평원공국',color:'#ba984d',seat:16,identity:'남서 평원의 곡창과 장인 마을을 거느린 공국',x:-210,z:155},
+    {id:'tide',name:'남해 자유도시',color:'#8a7da6',seat:21,identity:'남동 해안으로 향하는 교역로의 도시 연합',x:195,z:155}
+  ];
+  const names=[['흑철성','잿물나루','칼바람 보루','호밀벌','서리숲'],['청송도','이끼나루','솔바람 보루','연둣들','깊은가지'],['금빛궁','밀물장','황토성','넓은보리','느티울'],['보랏빛 항도','남해문','해풍성','소금들','비취숲']];
+  const patterns=[[-12,-37,66,'capital'],[58,12,54,'port'],[-58,-8,48,'castle'],[-18,53,36,'farm'],[-66,49,30,'forest']];
+  let added=0;
+  for(let region=0;region<5;region++){
+    const f=s.factions[region];
+    if(region)for(let j=0;j<5;j++){const [x,z,pop,style]=patterns[j],n=makeTown(f.seat+j,names[region-1][j],f.x+x,f.z+z,pop,style);initialize(n);n.founded=0;decide(s,n);s.towns.push(n);added+=pop;}
+    for(let j=0;j<5;j++){const n=town(s,f.seat+j);n.faction=f.id;if(!legacy||region){n.liege=j===0?null:f.seat;n.taxRate=j===0?0:.08;}if(!legacy&&n.style==='castle')n.reserve=40;if(region===1)n.ambition=Math.min(.95,n.ambition+.12);}
+    if(region){for(const [a,b]of [[0,1],[1,3],[3,2],[2,4],[4,0]])s.routes.push({id:'region-'+region+'-'+a,a:f.seat+a,b:f.seat+b,open:true,blockedUntil:0,created:0});
+      for(const [j,dx,dz,capacity]of [[3,-11,-19,24],[0,14,25,18],[1,-15,14,16]]){const owner=town(s,f.seat+j);s.plots.push({id:'region-'+region+'-field-'+j,name:owner.name+' 경작지',kind:'food',owner:owner.id,x:owner.x+dx,z:owner.z+dz,capacity});}}
+  }
+  for(const[a,b]of [[3,7],[5,19],[2,15],[4,23],[7,15],[19,23],[10,17],[15,22]])s.routes.push({id:'highroad-'+a+'-'+b,a,b,open:true,blockedUntil:0,created:0});
+  if(legacy){s.initialPopulation+=added;const own=town(s,0);if(own)own.faction=own.liege!==null?town(s,own.liege).faction:null;recordSample(s);log(s,s.factions.map(f=>f.seat),'주변 네 지역의 지도와 세력 관계를 관찰하기 시작했다. 새로 관찰한 마을의 이전 사건 기록은 없다.','discovery');}
+  return s;
+}
+function world(seed=7341){return fresh(seed,true);}
+
+function fresh(seed=7341,regional=false){
   const s={version:2,seed,rng:seed,time:0,day:0,started:false,foundingDay:0,nextCaravan:1,nextEvent:1,nextStory:1,nextArmy:1,nextNegotiation:1,caravans:[],events:[],stories:[],armies:[],negotiations:[],offers:[],relations:{},weather:null,forecast:null,nextWeather:20,wars:0,routes:[{a:1,b:2},{a:2,b:4},{a:4,b:3},{a:3,b:5},{a:5,b:1}].map((r,i)=>({...r,id:'r'+i,open:true,blockedUntil:0,created:0})),plots:[{id:'south-grain',name:'남쪽 곡창',kind:'food',owner:4,x:-29,z:34,capacity:24},{id:'river-fields',name:'강변 경작지',kind:'food',owner:1,x:2,z:-12,capacity:18},{id:'harbor-fields',name:'항구 배후 농지',kind:'food',owner:2,x:43,z:26,capacity:16}],towns:[makeTown(1,'오크헤이븐',-12,-37,66,'capital'),makeTown(2,'해오름 항구',58,12,54,'port'),makeTown(3,'돌마루 성채',-58,-8,48,'castle'),makeTown(4,'황금들녘',-18,53,36,'farm'),makeTown(5,'녹음숲',-66,49,30,'forest')]};
-  for(const t of s.towns){initialize(t);decide(s,t);}for(let i=0;i<901;i++)step(s,.2);
+  for(const t of s.towns){initialize(t);decide(s,t);}if(regional)regionalize(s);for(let i=0;i<901;i++)step(s,.2);
   const child=makeTown(0,'버들나루',12,17,12,'outpost');initialize(child);child.buildings=[{type:'hall',x:0,z:0,day:s.day}];child.food=22;child.wood=18;child.stone=6;child.coins=0;child.parent=null;child.founded=s.day;child.forest=300;child.explored=false;child.reserve=24;child.ledger.arrived=12;
-  s.towns.unshift(child);s.plots.push({id:'outpost-clearing',name:'버들나루 개간지',kind:'food',owner:0,x:16,z:22,capacity:10});s.started=true;s.foundingDay=s.day;s.initialPopulation=246;recordSample(s);log(s,[0],'낯선 정착민 열두 사람이 계곡 외곽에 버들나루를 세웠다. 식량 약 9일분, 외부 교역로와 보호자는 없다.','founding');decide(s,child);return s;
+  s.towns.unshift(child);s.plots.push({id:'outpost-clearing',name:'버들나루 개간지',kind:'food',owner:0,x:16,z:22,capacity:10});s.started=true;s.foundingDay=s.day;s.initialPopulation=regional?1182:246;recordSample(s);log(s,[0],'낯선 정착민 열두 사람이 계곡 외곽에 버들나루를 세웠다. 식량 약 9일분, 외부 교역로와 보호자는 없다.','founding');decide(s,child);return s;
 }
 
 function policy(s,key,value){const t=s.towns[0];if(key==='policy'&&!['balanced','food','growth','trade'].includes(value))return '알 수 없는 방침입니다';if(key==='reserve'&&![14,24,40].includes(Number(value)))return '선택할 수 없는 비축 목표입니다';if(!['policy','reserve','tradeOpen','immigration','auto'].includes(key))return '알 수 없는 설정입니다';t[key]=key==='reserve'?Number(value):value;decide(s,t);log(s,[0],t.name+' · '+({policy:'마을 우선순위',reserve:'식량 비축 목표',tradeOpen:'교역 방침',immigration:'정착민 수용',auto:'외교 자동 판단'})[key]+'를 바꿨다.','policy');return '';}
 function request(s,type){if(!PLANS[type])return '알 수 없는 건물입니다';const t=s.towns[0];t.request=type;decide(s,t);log(s,[0],t.name+' · 다음 건설을 '+PLANS[type].name+'으로 정했다.','policy');return '';}
-function validate(s){return !!s&&s.version===2&&Number.isFinite(s.time)&&Number.isInteger(s.day)&&s.towns?.length===6&&s.towns[0]?.id===0&&Array.isArray(s.caravans)&&Array.isArray(s.events)&&Array.isArray(s.routes)&&Array.isArray(s.stories)&&Array.isArray(s.armies)&&s.towns.every(t=>['food','wood','stone','pop'].every(k=>Number.isFinite(t[k])&&t[k]>=0)&&Array.isArray(t.workers)&&t.workers.length===6&&Array.isArray(t.buildings));}
+function validate(s){return !!s&&s.version===2&&Number.isFinite(s.time)&&Number.isInteger(s.day)&&s.towns?.length>=6&&s.towns.length<=32&&s.towns[0]?.id===0&&Array.isArray(s.caravans)&&Array.isArray(s.events)&&Array.isArray(s.routes)&&Array.isArray(s.stories)&&Array.isArray(s.armies)&&s.towns.every(t=>['food','wood','stone','pop'].every(k=>Number.isFinite(t[k])&&t[k]>=0)&&Array.isArray(t.workers)&&t.workers.length===6&&Array.isArray(t.buildings));}
 function stocks(s,key){return s.towns.reduce((n,t)=>n+t[key],0)+s.towns.reduce((n,t)=>n+t.workers.reduce((q,w)=>q+(w.cargo?.kind===key?w.cargo.q:0),0)+(t.project?(t.project.material[key]||0):0),0)+s.caravans.reduce((q,c)=>q+(c.kind===key?c.q:0)+(c.other===key?c.payment:0),0)+(key==='food'?s.armies.reduce((n,a)=>n+a.supplies+a.loot,0):0);}
-const api={KEY,PLANS,JOBS,fresh,step,policy,request,validate,count,capacity,reserveDays,workSite,stocks,newCaravan,caravanStep,findPath,foodFactor,maintenance,foodNeed,storage,diagnose,propose,negotiate,prepareWar,startExploration,acceptProtection,story,log,projectCost,population,recordSample};
+const api={world,regionalize,factionOf,sameFaction,factionSummary,bounds,KEY,PLANS,JOBS,fresh,step,policy,request,validate,count,capacity,reserveDays,workSite,stocks,newCaravan,caravanStep,findPath,foodFactor,maintenance,foodNeed,storage,diagnose,propose,negotiate,prepareWar,startExploration,acceptProtection,story,log,projectCost,population,recordSample};
 if(typeof module!=='undefined')module.exports=api;else root.Valley=api;
 })(typeof window==='undefined'?globalThis:window);
