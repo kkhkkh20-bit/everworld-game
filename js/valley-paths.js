@@ -4,11 +4,8 @@
 if(root.ValleyPaths){if(typeof module!=='undefined')module.exports=root.ValleyPaths;return;}
 const Geometry=typeof module!=='undefined'?require('./valley-world-geometry.js'):root.ValleyGeometry;
 const caches=new Map(),CELL=4;
-const distance=(a,b)=>Math.hypot(b.x-a.x,b.z-a.z);
-function length(points){let n=0;for(let i=1;i<points.length;i++)n+=distance(points[i-1],points[i]);return n;}
-function at(points,d){let left=Math.max(0,d);for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],n=distance(a,b);if(left<=n||i===points.length-1){const u=n?Math.min(1,left/n):0;return {x:a.x+(b.x-a.x)*u,z:a.z+(b.z-a.z)*u,index:i-1};}left-=n;}return {...points[0],index:0};}
-function samples(points,step=1){const total=length(points),out=[];for(let d=0;d<total;d+=step)out.push({...at(points,d),distance:d});out.push({...points.at(-1),distance:total});return out;}
-function pointDistance(x,z,points){let result=Infinity;for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],dx=b.x-a.x,dz=b.z-a.z,u=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/(dx*dx+dz*dz||1)));result=Math.min(result,Math.hypot(x-a.x-dx*u,z-a.z-dz*u));}return result;}
+const Polyline=typeof module!=='undefined'?require('./valley-polyline.js'):root.ValleyPolyline;
+const {distance,length,at,samples,pointDistance,compile,position}=Polyline;
 function bridgeSpans(points,g){const all=samples(points,1),spans=[];let start=null;
   for(let i=0;i<all.length;i++){const p=all[i],wet=g.waterDistance(p.x,p.z)<.8;if(wet&&start===null)start=Math.max(0,i-2);if(start!==null&&(!wet||i===all.length-1)){const end=Math.min(all.length-1,i+1),a=all[start],b=all[end],len=distance(a,b);if(len>2)spans.push({x:(a.x+b.x)/2,z:(a.z+b.z)/2,length:len,angle:Math.atan2(b.x-a.x,b.z-a.z),a:{x:a.x,z:a.z},b:{x:b.x,z:b.z},start:a.distance,end:b.distance,baseY:(Math.max(0,g.height(a.x,a.z))+Math.max(0,g.height(b.x,b.z)))/2+.04,rise:Math.max(0,g.height(b.x,b.z))-Math.max(0,g.height(a.x,a.z))});start=null;}}
   return spans;
@@ -58,11 +55,11 @@ function navigation(state){
   const result={g,plan,rejoin};caches.set(key,result);if(caches.size>4)caches.delete(caches.keys().next().value);return result;
 }
 const depot=t=>({x:t.x,z:t.z+4.4});
-function prepare(state){const nav=navigation(state),all=new Map();for(const r of state.routes){const a=state.towns.find(t=>t.id===r.a),b=state.towns.find(t=>t.id===r.b);if(!a||!b)continue;const points=r.alignment===1&&r.waypoints?.length>1?r.waypoints:nav.plan(depot(a),depot(b));if(points){all.set(r.id??`${r.a}:${r.b}`,points);}}return {nav,all};}
+function prepare(state){let nav;const all=new Map();for(const r of state.routes){const a=state.towns.find(t=>t.id===r.a),b=state.towns.find(t=>t.id===r.b);if(!a||!b)continue;const points=r.alignment===1&&r.waypoints?.length>1?r.waypoints:(nav||=navigation(state)).plan(depot(a),depot(b));if(points){all.set(r.id??`${r.a}:${r.b}`,points);}}return {get nav(){return nav||=navigation(state);},all};}
 function enable(state){const {all}=prepare(state);for(const r of state.routes){const points=all.get(r.id??`${r.a}:${r.b}`);if(points){if(r.alignment!==1||!r.waypoints?.length){r.waypoints=points;r.alignment=1;}r.length=length(points);}}return state;}
 function between(state,a,b){return navigation(state).plan(a,b);}
 function rejoin(state,a,b){return navigation(state).rejoin(a,b);}
 function routePoints(state,a,b){const r=state.routes.find(r=>r.a===a&&r.b===b||r.a===b&&r.b===a);if(!r)return null;const points=r.waypoints||prepare(state).all.get(r.id??`${r.a}:${r.b}`);return points?(r.a===a?points:points.slice().reverse()):null;}
-function course(state,path){const points=[],ends=[];let total=0;for(let i=1;i<path.length;i++){const a=typeof path[i-1]==='object'?path[i-1]:depot(state.towns.find(t=>t.id===path[i-1])),b=typeof path[i]==='object'?path[i]:depot(state.towns.find(t=>t.id===path[i]));const leg=typeof path[i-1]==='number'&&typeof path[i]==='number'?routePoints(state,path[i-1],path[i]):a.rejoin||between(state,a,b);if(!leg)return null;total+=length(leg);ends.push(total);points.push(...leg.slice(i===1?0:1));}return {points,ends,total};}
-const api={enable,prepare,between,rejoin,routePoints,course,depot,length,at,samples,pointDistance,bridgeSpans};root.ValleyPaths=api;if(typeof module!=='undefined')module.exports=api;
+function course(state,path){const points=[],ends=[];let total=0;for(let i=1;i<path.length;i++){const a=typeof path[i-1]==='object'?path[i-1]:depot(state.towns.find(t=>t.id===path[i-1])),b=typeof path[i]==='object'?path[i]:depot(state.towns.find(t=>t.id===path[i]));const leg=typeof path[i-1]==='number'&&typeof path[i]==='number'?routePoints(state,path[i-1],path[i]):a.rejoin||between(state,a,b);if(!leg)return null;total+=length(leg);ends.push(total);points.push(...leg.slice(i===1?0:1));}return {...compile(points),ends,total};}
+const api={compile,position,enable,prepare,between,rejoin,routePoints,course,depot,length,at,samples,pointDistance,bridgeSpans};root.ValleyPaths=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

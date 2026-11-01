@@ -2,8 +2,8 @@
 (function (root) {
 'use strict';
 const Paths=typeof module!=='undefined'?require('./valley-paths.js'):root.ValleyPaths;
-const courseCache=new WeakMap();
-function roadCourse(s,path){let c=courseCache.get(path);if(!c){c=Paths.course(s,path);if(c)courseCache.set(path,c);}return c;}
+const Travel=typeof module!=='undefined'?require('./valley-travel.js'):root.ValleyTravel;
+const travel=Travel.createTravelCache(Paths),roadCourse=travel.course,travelCourse=travel.line;
 function enableRoads(s){
   Paths.enable(s);
   for(const c of s.caravans){
@@ -107,7 +107,7 @@ function workSite(t,job) {
   if(job==='stone')return {x:t.x+11,z:t.z+12};
   return {x:t.x,z:t.z};
 }
-function follow(w,journey,dt){journey.distance=(journey.distance||0)+dt*7;const p=Paths.at(journey.points,journey.distance);w.x=p.x;w.z=p.z;return journey.distance>=Paths.length(journey.points);}
+function follow(w,journey,dt){journey.distance=(journey.distance||0)+dt*7;const course=travelCourse(journey.points),p=Paths.position(course,journey.distance);w.x=p.x;w.z=p.z;return journey.distance>=course.total;}
 function move(w,p,dt) {
   const dx=p.x-w.x,dz=p.z-w.z,d=Math.hypot(dx,dz),n=Math.min(d,dt*7);
   if(d<.15){w.x=p.x;w.z=p.z;return true;}
@@ -243,7 +243,7 @@ function trade(s){
 }
 function pathPosition(s,path,progress){
   const c=roadCourse(s,path);if(!c)return {segment:0,x:typeof path[0]==='object'?path[0].x:town(s,path[0]).x,z:typeof path[0]==='object'?path[0].z:town(s,path[0]).z,total:Infinity};
-  const distance=Math.min(1,progress)*c.total,p=Paths.at(c.points,distance);let segment=0;while(segment<c.ends.length-1&&distance>c.ends[segment])segment++;return {segment,x:p.x,z:p.z,total:c.total||1};
+  const distance=Math.min(1,progress)*c.total,p=Paths.position(c,distance);let segment=0;while(segment<c.ends.length-1&&distance>c.ends[segment])segment++;return {segment,x:p.x,z:p.z,total:c.total||1};
 }
 function caravanStep(s,c,dt){
   if(!c.path)c.path=[c.from,c.to];const blocked=c.path.slice(1).some((id,i)=>{if(typeof id==='object'||typeof c.path[i]==='object')return false;const r=s.routes.find(r=>(r.a===id&&r.b===c.path[i])||(r.b===id&&r.a===c.path[i]));return !r||!r.open||r.blockedUntil>s.day||atWar(s,id,c.path[i]);});
@@ -334,7 +334,7 @@ function endWar(s,a,result){
 function armyStep(s,a,dt){
   const from=town(s,a.from),to=s.plots.find(p=>p.id===a.plot)||town(s,a.to);
   if(a.phase==='march'||a.phase==='return'){
-    const returning=a.phase==='return';if(!a.course){a.course=Paths.between(s,{x:a.x,z:a.z},returning?Paths.depot(from):{x:to.x,z:to.z});a.progress=0;}if(!a.course)return;a.progress+=dt*4/(Paths.length(a.course)||1);const p=Paths.at(a.course,Math.min(1,a.progress)*Paths.length(a.course));a.x=p.x;a.z=p.z;
+    const returning=a.phase==='return';if(!a.course){a.course=Paths.between(s,{x:a.x,z:a.z},returning?Paths.depot(from):{x:to.x,z:to.z});a.progress=0;}if(!a.course)return;const course=travelCourse(a.course);a.progress+=dt*4/(course.total||1);const p=Paths.position(course,Math.min(1,a.progress)*course.total);a.x=p.x;a.z=p.z;
     if(a.progress>=1){if(returning){from.deployed=Math.max(0,from.deployed-a.troops);from.food+=a.supplies+a.loot;a.supplies=0;a.loot=0;a.done=true;log(s,[from.id],from.name+'의 생존 병력 '+a.troops+'명이 돌아왔다. 남은 보급과 전리품이 창고에 도착했다.','peace',{story:a.story});}else{a.phase='battle';a.battleDay=s.day;}}
   }
 }

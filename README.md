@@ -1,5 +1,7 @@
 # 버들나루의 첫 겨울
 
+**성능 병목을 줄이고 렌더링·이동·실행 주기를 역할별 모듈로 분리했습니다.** [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?v=10) · [원인·구조·실제 측정과 검증](docs/valley-performance-refactor.md).
+
 **길은 산을 관통하는 직선 대신 산자락과 고개를 따라갑니다.** 흙길·다리·교역 수레와 세력 지도를 같은 경로로 맞췄습니다. [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html?v=9) · [실제 화면과 변경 내용](docs/terrain-roads.md).
 
 **새 시작은 대륙 서쪽 해안의 공동 초가집입니다.** 바다·산맥·사막·숲·초원을 갖춘 하나의 대륙에서 기존 공동체들과 관계를 맺습니다. 하단 **내가 할 일 · 먹거리 마련 방식 정하기**를 눌러 자급·교역·보호 중 방향을 선택하세요. 주민들은 자동으로 실행합니다. [실행](https://kkhkkh20-bit.github.io/everworld-game/frontier.html) · [대륙과 첫 목표·실제 스크린샷](docs/continent-frontier.md).
