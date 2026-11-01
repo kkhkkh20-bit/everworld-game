@@ -22,6 +22,7 @@ jobs:
           node tests/valley.cjs
           node tests/valley-regions.cjs
           node tests/winter.cjs
+          node tests/architecture.cjs
           node tests/landscape.mjs
           node tests/valley-legacy.cjs
           node tests/isekai.cjs
