@@ -47,7 +47,7 @@ export function buildingAppearance(t,b){
   const tier=b.tier??0;
   if(b.type==='farm')return 'grain';
   if(b.type==='home')return ['thatchHouse','timberHouse','stoneHouse','stoneManor'][tier];
-  if(b.type==='hall')return tier===0?'tent':tier===1?'timberHouse':tier===2?'stoneHouse':t.style==='castle'?'castle':'townhall';
+  if(b.type==='hall')return tier===0?'thatchHouse':tier===1?'timberHouse':tier===2?'stoneHouse':t.style==='castle'?'castle':'townhall';
   if(b.type==='workshop')return tier<2?'woodWorkshop':'lumbermill';
   if(b.type==='mill')return tier<2?'woodMill':'windmill';
   return 'market';
